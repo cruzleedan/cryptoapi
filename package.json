@@ -30,7 +30,8 @@
     "nodemon": "^1.17.5"
   },
   "scripts": {
-    "dev": "nodemon www.js"
+    "dev": "nodemon www.js",
+    "start": "node www.js"
   },
   "author": "Tingkersoft",
   "license": "ISC",
