@@ -1,6 +1,6 @@
-const EntityController = require('../controllers/entity/Entity.controller');
-const ReviewController = require('../controllers/review/Review.controller');
-const VoteController = require('../controllers/vote/Vote.controller');
+const EntityController = require('../controllers/entity/entity.controller');
+const ReviewController = require('../controllers/review/review.controller');
+const VoteController = require('../controllers/vote/vote.controller');
 const {Review} = require('../models');
 const { check } = require('express-validator/check');
 const { validate } = require('../middleware/validation');
