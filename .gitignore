@@ -1,4 +1,7 @@
-.config/'node_modules' 
+# .config/*
+
+# Dependency directories
+node_modules/
 
 # Elastic Beanstalk Files
 .elasticbeanstalk/*
