@@ -25,6 +25,8 @@ console.log("Environment:", CONFIG.app);
 
 //DATABASE
 const models = require("./models");
+console.log('process env', process.env);
+console.log('config', CONFIG);
 models.sequelize.authenticate().then(() => {
         console.log('Connected to SQL database:', CONFIG.db_name);
     })
