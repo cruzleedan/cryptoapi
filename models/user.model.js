@@ -85,7 +85,8 @@ module.exports = (sequelize, DataTypes) => {
         deletedAt: 'delete_time',
         paranoid: true,
 
-        freezeTableName: true
+        freezeTableName: true,
+        tableName: 'user'
     });
 
     Model.beforeSave(async function(user, options){

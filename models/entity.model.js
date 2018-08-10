@@ -35,7 +35,7 @@ module.exports = (sequelize, DataTypes) => {
             field: 'overall_rating',
             type: DataTypes.DECIMAL(10, 3)
         },
-        reviewCount: {
+        reviewCount: {  
             field: 'review_count',
             type: DataTypes.INTEGER
         },
@@ -73,7 +73,8 @@ module.exports = (sequelize, DataTypes) => {
         deletedAt: 'delete_time',
         paranoid: true,
         
-        freezeTableName: true
+        freezeTableName: true,
+        tableName: 'entity'
     });
 
     Model.associate = function(models){
