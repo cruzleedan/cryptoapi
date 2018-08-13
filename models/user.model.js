@@ -88,7 +88,17 @@ module.exports = (sequelize, DataTypes) => {
         freezeTableName: true,
         tableName: 'user'
     });
-
+    Model.associate = function(models){
+        this.Reviews = this.hasMany(models.Review, {
+            foreignKey: 'userId'
+        });
+        this.Entities = this.hasMany(models.Entity, {
+            foreignKey: 'userId'
+        });
+        this.Votes = this.hasMany(models.Vote, {
+            foreignKey: 'userId'
+        });
+    };
     Model.beforeSave(async function(user, options){
         let err;
         if (user.changed('password')) {

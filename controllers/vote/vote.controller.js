@@ -2,11 +2,11 @@ const { User, Review, Vote, sequelize } = require('../../models');
 const authService = require('../../services/auth.service');
 const { decodeHash } = require('../../services/hash.service');
 const { to, ReE, ReS } = require('../../services/util.service');
-const { updateEntityVote } = require('../../helpers/vote.helper');
+const { updateReviewVote } = require('../../helpers/vote.helper');
 
 const vote = async (req, res) => {
-	const userId = req.user.id,
-    reviewId = req.params['reviewId'],
+	const userId = req.user.id;
+    let reviewId = req.params['reviewId'],
     voteType = req.body['voteType'];
 
     if(!reviewId) return ReE(res, 'Review ID is required.', 422);
@@ -29,7 +29,7 @@ const vote = async (req, res) => {
     	})
     })
     .then(vote => {
-		return updateEntityVote(res, vote);
+		return updateReviewVote(res, vote);
 	})
 	.then(review => {
     	return ReS(res, {data: review, success: true}, 201);

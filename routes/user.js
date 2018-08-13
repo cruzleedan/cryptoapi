@@ -6,7 +6,7 @@ module.exports = (router, passport) => {
 	router.get('/user', passport.authenticate('jwt', {session: false}), UserController.get);
 	router.get('/users',
 		[
-			check('filter').not().isEmpty().withMessage('Filter keyword is required'),
+			// check('filter').not().isEmpty().withMessage('Filter keyword is required'),
 		],
 		validate,
 		passport.authenticate('jwt', {session: false}), 
@@ -46,6 +46,15 @@ module.exports = (router, passport) => {
 		UserController.deleteUserReview
 	);
 	router.put('/user', passport.authenticate('jwt', {session:false}), UserController.update);
+	router.put('/user/:id/profile',
+		[
+			check('id').not().isEmpty().withMessage('User ID is required')
+		],
+		validate,
+		passport.authenticate('jwt', {session:false}), 
+		permit('admin'), 
+		UserController.updateUserProfile
+	);
 	router.put('/user/profile', passport.authenticate('jwt', {session:false}), UserController.updateProfile);
 	router.put('/user/password-reset', passport.authenticate('jwt', {session:false}), UserController.passwordReset);
     router.post('/users', UserController.create);

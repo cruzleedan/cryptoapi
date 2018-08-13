@@ -53,10 +53,10 @@ module.exports = (sequelize, DataTypes) => {
 
     Model.associate = function(models){
         this.Review = this.belongsTo(models.Review, {
-            foreignKey: 'review_id'
+            foreignKey: 'reviewId'
         });
         this.User = this.belongsTo(models.User, {
-            foreignKey: 'user_id'
+            foreignKey: 'userId'
         });
     };
     Model.prototype.toWeb = function (pw) {

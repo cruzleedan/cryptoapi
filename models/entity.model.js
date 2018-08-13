@@ -79,14 +79,13 @@ module.exports = (sequelize, DataTypes) => {
 
     Model.associate = function(models){
         this.Category = this.belongsTo(models.Category, {
-            foreignKey: 'entity_category_id'
+            foreignKey: 'categoryId'
         });
         this.User = this.belongsTo(models.User, {
-            foreignKey: 'user_id'
+            foreignKey: 'userId'
         });
         this.Reviews = this.hasMany(models.Review, {
-            as: 'reviews',
-            foreignKey: 'entity_id'
+            foreignKey: 'entityId'
         });
     };
     Model.prototype.toWeb = function (pw) {

@@ -3,32 +3,30 @@ const { Review, User, Vote, sequelize, Sequelize } = require('../models');
 const Op = Sequelize.Op;
 const { to, ReE, ReS }  = require('../services/util.service');
 
-const updateEntityVote = async (res, vote) => {
-
+const updateReviewVote = async (res, vote) => {
 	let err, totalUpvotes, totalDownvotes, review;
+	
+	[err, totalUpvotes] = await to(
+		Vote.count({
+			where: {reviewId: vote.reviewId, voteType: 1},
+			paranoid: true
+		})
+	);
+	if(err) return ReE(res, err, 422);
+	[err, totalDownvotes] = await to(
+		Vote.count({
+			where: {reviewId: vote.reviewId, voteType: 0},
+			paranoid: true
+		})
+	);
+	if(err) return ReE(res, err, 422);
 
-	if(vote.voteType){
-		[err, totalUpvotes] = await to(
-			Vote.count('type', {
-				where: {reviewId: vote.reviewId, type: 1},
-				paranoid: true
-			})
-		);
-		if(err) return ReE(res, err, 422);
-	}
-	else {
-		[err, totalDownvotes] = await to(
-			Vote.count('type', {
-				where: {reviewId: vote.reviewId, type: 0},
-				paranoid: true
-			})
-		);
-		if(err) return ReE(res, err, 422);
-	}
-
-	const body = vote.voteType ? {upvoteTally: totalUpvotes} : {downvoteTally: totalDownvotes};
+	
 	[err, review] = await to(
-		Review.update(body, {
+		Review.update({
+			upvoteTally: totalUpvotes,
+			downvoteTally: totalDownvotes
+		}, {
 			where: {id: vote.reviewId},
 			paranoid: true
 		})
@@ -41,4 +39,4 @@ const updateEntityVote = async (res, vote) => {
 	review = hashColumns(['userId', 'id', 'entityId'], review);
 	return review;
 }
-module.exports.updateEntityVote = updateEntityVote;
+module.exports.updateReviewVote = updateReviewVote;

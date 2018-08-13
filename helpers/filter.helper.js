@@ -66,8 +66,6 @@ const filterFn = (res, param) => {
     tblAttr = model.tableAttributes,
     filterFields = param.filterFields || [];
     hashColumns = param.hashColumns || [];
-    console.log('filter', filter);
-    console.log('tblAttr', tblAttr);
     if(typeof filter === 'object') {
         /*------------------------------ START ------------------------------
         | 1. Column Search - Search one column containing the keyword
