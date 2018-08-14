@@ -10,20 +10,7 @@ const CONFIG = require('./config');
 const v1 = require('./routes/v1');
 const app = express();
 
-var whitelist = ['https://cryptocaution-dev.herokuapp.com'];
-var corsOptions = {
-    origin: function (origin, callback) {
-        if (whitelist.indexOf(origin) !== -1 || !origin) {
-            callback(null, true)
-        } else {
-            callback(new Error('Not allowed by CORS'))
-        }
-    }
-}
-
-
-
-app.use(cors(corsOptions));
+app.use(cors());
 app.use(logger('dev'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({
