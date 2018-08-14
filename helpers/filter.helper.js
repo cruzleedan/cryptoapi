@@ -52,6 +52,19 @@ const getFieldsOfKeywordDataType = (model, keywordDataType, filterFields) => {
     }
     return fieldsOfSameDataType;
 }
+const parseFieldsToJSON = (fields, rows) => {
+    if(!fields.length) return rows;
+
+    rows = rows.map(row => {
+        parseToJSON.forEach(field => {
+            if(row.hasOwnProperty(field) && !(row[field] instanceof Array)) {
+                row[field] = JSON.parse(row[field]);
+            }
+        });
+        return row;
+    });
+    return rows;
+}
 /**
  * @param  {Object}
  * @return {Object}
@@ -64,8 +77,9 @@ const filterFn = (res, param) => {
     config = param.config || {},
     count = param.count,
     tblAttr = model.tableAttributes,
-    filterFields = param.filterFields || [];
-    hashColumns = param.hashColumns || [];
+    filterFields = param.filterFields || [],
+    hashColumns = param.hashColumns || [],
+    parseToJSON = param.parseToJSON || [];
     if(typeof filter === 'object') {
         /*------------------------------ START ------------------------------
         | 1. Column Search - Search one column containing the keyword
@@ -155,6 +169,7 @@ const filterFn = (res, param) => {
         model.findAndCountAll(config)
         .then(result => {
             result.rows = hashColumnsFn(hashColumns, result.rows);
+            result.rows = parseFieldsToJSON(parseToJSON, result.rows);
             return ReS(res, {data: result.rows, count: result.count}, 200);
         }).catch(err => {
             return ReE(res, err, 422);
@@ -164,6 +179,7 @@ const filterFn = (res, param) => {
         model.findAll(config)
         .then(result => {
             result = hashColumnsFn(hashColumns, result);
+            result = parseFieldsToJSON(parseToJSON, result);
             return ReS(res, {data: result}, 200);
         }).catch(err => {
             return ReE(res, err, 422);
