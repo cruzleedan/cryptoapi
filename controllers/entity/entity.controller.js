@@ -234,7 +234,7 @@ const getReviews = async (req, res) => {
             model: User,
             attributes: {
                 include: [
-                    [sequelize.literal('(SELECT COUNT(*) FROM `Review` sr WHERE sr.user_id = Review.user_id)'), 'reviewCount']
+                    [sequelize.literal('(SELECT COUNT(*) FROM `review` sr WHERE sr.user_id = Review.user_id)'), 'reviewCount']
                 ],
                 exclude: ['roles', 'createdAt', 'updatedAt', 'deletedAt', 'create_time', 'update_time', 'delete_time', 'password', 'AcceptedTermsFlag', 'desc', 'facebookId', 'firstname', 'lastname', 'gender', 'authMethod', 'blockFlag']
             }
