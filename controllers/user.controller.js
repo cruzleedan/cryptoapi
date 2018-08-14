@@ -130,6 +130,7 @@ const getUsers = async (req, res) => {
         filterFields,
         model: User,
         count: true,
+        parseToJSON: ['roles'],
         hashColumns: ['id']
     });
 }
