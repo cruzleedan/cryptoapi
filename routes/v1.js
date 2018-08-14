@@ -17,6 +17,7 @@ router.get('/', function(req, res, next) {
 
 router.get('/dash', passport.authenticate('jwt', {session:false}),HomeController.Dashboard)
 
+require('./home')(router, passport);
 require('./user')(router, passport);
 require('./category')(router, passport);
 require('./entity')(router, passport);

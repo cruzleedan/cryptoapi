@@ -1,6 +1,5 @@
 'use strict';
-const bcrypt = require('bcrypt');
-const bcrypt_p = require('bcrypt-promise');
+const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { TE, to } = require('../services/util.service');
 const CONFIG = require('../config');
@@ -86,9 +85,20 @@ module.exports = (sequelize, DataTypes) => {
         deletedAt: 'delete_time',
         paranoid: true,
 
-        freezeTableName: true
+        freezeTableName: true,
+        tableName: 'user'
     });
-
+    Model.associate = function(models){
+        this.Reviews = this.hasMany(models.Review, {
+            foreignKey: 'userId'
+        });
+        this.Entities = this.hasMany(models.Entity, {
+            foreignKey: 'userId'
+        });
+        this.Votes = this.hasMany(models.Vote, {
+            foreignKey: 'userId'
+        });
+    };
     Model.beforeSave(async function(user, options){
         let err;
         if (user.changed('password')) {
@@ -107,7 +117,7 @@ module.exports = (sequelize, DataTypes) => {
         let err, pass;
         if (!this.password) TE('Password is not set');
 
-        [err, pass] = await to(bcrypt_p.compare(pw, this.password));
+        [err, pass] = await to(bcrypt.compare(pw, this.password));
         if (err) TE(err);
 
         if (!pass) TE('Invalid username or password');

@@ -9,9 +9,9 @@ const calcEntityRating = (count, totalRating) => {
 const updateReviewRtng = async (res, review) => {
 	const whereCond = {
 		where: {
-			entity_id: review.entity_id,
-			delete_time: {[Op.eq]: null}
-		}
+			entityId: review.entityId
+		},
+		paranoid: true
 	};
 	let err, entity, count, totalRating;
 	[err, count] = await to(Review.count(whereCond));
@@ -21,14 +21,20 @@ const updateReviewRtng = async (res, review) => {
 	if(err) return ReE(res, err, 422);
 
 	const overallRating = calcEntityRating(count, totalRating);
-	[err, entity] = await to(Entity.update({
-		reviewCount: count,
-		rating: overallRating
-	}, {
-		where: {entity_id: review.entity_id}
-	}));
+	[err, entity] = await to(
+		Entity.update({
+				reviewCount: count,
+				rating: overallRating
+			},
+			{
+				where: {
+					id: review.entityId
+				}
+			}
+		)
+	);
 	if(err) return ReE(res, err, 422);
-
+	console.log(entity)
 	return review;
 };
 module.exports.updateReviewRtng = updateReviewRtng;

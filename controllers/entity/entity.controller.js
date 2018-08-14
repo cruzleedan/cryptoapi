@@ -7,6 +7,7 @@ const {filterFn} = require('../../helpers/filter.helper');
 const Op = Sequelize.Op;
 const path = require('path');
 const validator = require('validator');
+const findRemoveSync = require('find-remove');
 // const getEntityPhoto = async function(req, res, next) {
 //     const appDir = path.dirname(require.main.filename);
 //     const fileName = req.params.filename;
@@ -20,7 +21,7 @@ const postNewEntity = async (req, res) => {
     if(!req.user) return ReE(res, 'Unauthorized', 422);
 
     const appDir = path.dirname(require.main.filename);
-    const uploadPath = 'server/public/images/entities/';
+    const uploadPath = 'public/images/entities/';
     const storage = multer.diskStorage({
         destination: uploadPath,
         filename: (req, file, callback) => { 
@@ -58,6 +59,58 @@ const postNewEntity = async (req, res) => {
     })
 }
 module.exports.postNewEntity = postNewEntity;
+const updateEntity = async (req, res) => {
+    if(!req.user) return ReE(res, 'Unauthorized', 422);
+    let entityId = req.params['id'];
+    if(!entityId) return ReE(res, 'Entity ID is required');
+    entityId = decodeHash(entityId);
+    let entity, err;
+    [err, entity] = await to(Entity.findById(entityId));
+    if(err) return ReE(res, err, 422)
+    if(!entity) return ReE(res, 'Entity Not Found', 422);
+
+
+    const appDir = path.dirname(require.main.filename);
+    const uploadPath = `public/images/entities/${entityId}`;
+    const storage = multer.diskStorage({
+        destination: uploadPath,
+        filename: (req, file, callback) => { 
+            callback(null, file.originalname);
+        }
+    });
+    const upload = multer({storage}).single('image');
+    upload(req, res, (err) => {
+        if(err) return ReE(res, err, 422);
+        
+        if(validator.isEmpty(req.body.categoryId)) return ReE(res, 'Entity Category is required');
+        req.body.categoryId = decodeHash(req.body.categoryId);
+        if(validator.isEmpty(req.body.desc)) return ReE(res, 'Entity Description is required');
+        if(validator.isEmpty(req.body.name)) return ReE(res, 'Entity Name is required');
+        
+        // No error occured.
+        entity.set(Object.assign(req.body,{
+            'userId': req.user.id,
+            'image': res.req.file.filename || null,
+            'links': JSON.parse(req.body.links) || []
+        }));
+
+        entity.save().then(entity => {
+            console.log('The filename is ' + res.req.file.filename);
+            entity = hashColumns(['id', 'categoryId', 'userId'], entity);
+            entity = Object.keys(entity)
+                        .filter(field => !['userId'].includes(field))
+                        .reduce((acc, key) => {
+                            acc[key] = entity[key];
+                            return acc;
+                        }, {});
+            return ReS(res, {success: true, data: entity}, 201);
+        }).catch(err => {
+            console.log(err);
+            return ReE(res, err, 422);
+        });
+    })
+}
+module.exports.updateEntity = updateEntity;
 
 const getEntities = async (req, res) => {
     const queryParams = req.query,
@@ -115,6 +168,7 @@ const getEntityById = async (req, res) => {
         })
     );
     if(err) return ReE(res, err, 422);
+    if(!entity) return ReE(res, 'Cannot find Entity', 422);
 
     [err, review] = await to(
         Review.findAndCountAll({
@@ -175,17 +229,22 @@ const getReviews = async (req, res) => {
     const config = {
         attributes: {
             exclude: ['create_time', 'delete_time', 'update_time', 'user_id', 'entity_id'],
-            include: [
-                [sequelize.literal('(SELECT COUNT(*) FROM `Review` sr WHERE sr.user_id = Review.user_id)'), 'reviewCount']
-            ]
         },
         include: [{
             model: User,
-            attributes: ['username', 'avatar']
+            attributes: {
+                include: [
+                    [sequelize.literal('(SELECT COUNT(*) FROM `Review` sr WHERE sr.user_id = Review.user_id)'), 'reviewCount']
+                ],
+                exclude: ['roles', 'createdAt', 'updatedAt', 'deletedAt', 'create_time', 'update_time', 'delete_time', 'password', 'AcceptedTermsFlag', 'desc', 'facebookId', 'firstname', 'lastname', 'gender', 'authMethod', 'blockFlag']
+            }
         }],
         order: [[sortField, sortDirection]],
         offset: initialPos,
         limit: finalPos,
+        where: {
+            entityId
+        },
         paranoid: true
     };
     
@@ -195,7 +254,7 @@ const getReviews = async (req, res) => {
         filterFields,
         model: Review,
         count: true,
-        hashColumns: ['id', 'entityId', 'userId']
+        hashColumns: ['id', 'entityId', 'userId', {'User': ['id']}]
     });
 
 
@@ -251,3 +310,34 @@ const getReviews = async (req, res) => {
     // return ReS(res, {data: reviews, count: entity.reviewCount }, 200);
 }
 module.exports.getReviews = getReviews;
+
+const deleteEntity = async (req, res) => {
+    let user = req.user, 
+    entityId = req.params['id'],
+    entity, err;
+    entityId = decodeHash(entityId);
+    [err, entity] = await to(
+        Entity.findById(entityId)
+    );
+    if(err) return ReE(res, 'Cannot find the Entity', 422);
+    const appDir = path.dirname(require.main.filename);
+    const filePath = path.resolve(`${appDir}/public/images/entities/`);
+    var result = findRemoveSync(filePath, {dir: entityId+''});
+    return sequelize.transaction(transaction => {
+        return entity.destroy()
+    })
+    .then(entity => {
+        entity = hashColumns(['id', 'categoryId', 'userId'], entity);
+        entity = Object.keys(entity)
+                    .filter(field => !['userId', 'user_id', 'entity_category_id'].includes(field))
+                    .reduce((acc, key) => {
+                        acc[key] = entity[key];
+                        return acc;
+                    }, {});
+        return ReS(res, {data: entity, images: result}, 200); 
+    })
+    .catch(err => {
+        return ReE(res, err, 422);
+    });
+}
+module.exports.deleteEntity = deleteEntity;

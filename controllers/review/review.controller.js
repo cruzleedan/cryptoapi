@@ -23,7 +23,7 @@ module.exports.updateReview = updateReview;
 
 const postNewReview = async (req, res) => {
 	// res.setHeader('Content-Type', 'application/json');
-	const entityId = req.params['id'];
+	let entityId = req.params['id'];
 	if(!entityId) return ReE(res, 'Entity Id is required', 422);
     if(!req.user) return ReE(res, 'Unauthorized', 422);
 

@@ -38,7 +38,7 @@ module.exports = (sequelize, DataTypes) => {
 
     Model.associate = function (models) {
         this.Entities = this.hasMany(models.Entity, {
-            foreignKey: 'entity_category_id'
+            foreignKey: 'categoryId'
         });
     }
 

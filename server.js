@@ -19,6 +19,7 @@ app.use(bodyParser.urlencoded({
 //Passport
 app.use(passport.initialize());
 
+const { decodeHash }  = require('./services/hash.service');
 
 //Log Env
 console.log("Environment:", CONFIG.app);
@@ -32,8 +33,33 @@ models.sequelize.authenticate().then(() => {
         console.error('Unable to connect to SQL database:', CONFIG.db_name, err);
     });
 
-app.use('/avatar', express.static(path.join(__dirname, 'public/images/avatars')));
-app.use('/entity', express.static(path.join(__dirname, 'public/images/entities')));
+if(CONFIG.app === 'dev') {
+    // app.use(function(req,res,next){setTimeout(next,3000)});
+}
+app.use('/static/avatar',express.static(path.join(__dirname, 'public/images/avatars')));
+app.use('/static/entity',express.static(path.join(__dirname, 'public/images/entities')));
+app.use(
+    '/avatar/:id/:filename',
+    (req, res, next) => {
+        if(req.params['id']){
+            const id = decodeHash(req.params['id']);
+            const filename = req.params['filename'];
+            return res.redirect(`/static/avatar/${id}/${filename}`);
+        }
+        return next();
+    }
+);
+app.use(
+    '/entity/:id/:filename',
+    (req, res, next) => {
+        if(req.params['id']){
+            const id = decodeHash(req.params['id']);
+            const filename = req.params['filename'];
+            return res.redirect(`/static/entity/${id}/${filename}`);
+        }
+        return next();
+    }
+);
 app.use('/api/v1', v1);
 
 app.use('/', function (req, res) {

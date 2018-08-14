@@ -59,7 +59,7 @@ const getCategoriesWithFilter = async (req, res) => {
         filter,
         filterFields,
         model: Category,
-        count: false,
+        count: true,
         hashColumns: ['id']
     });
 
@@ -126,7 +126,59 @@ const getCategoryById = async (req, res) => {
     [err, category] = await to(Category.findById(entityId));
 
     if(err) return ReE(res, err, 422);
-
+    category = category ? hashColumns(['id'], category) : {};
     return ReS(res, {data: category}, 200);
 }
 module.exports.getCategoryById = getCategoryById;
+
+const checkCategoryNameNotTaken = async (req, res) => {
+    let category, err,
+    categoryName = req.query['categoryName'];
+    if(!categoryName) return ReE(res, 'Category Name is required', 422);
+    [err, category] = await to(
+        Category.findOne({
+            where: {
+                category: categoryName
+            },
+            paranoid: true
+        })
+    );
+    if(err) return ReE(res, err, 422);
+    return ReS(res, {data: !!(category)}, 200);
+}
+module.exports.checkCategoryNameNotTaken = checkCategoryNameNotTaken;
+
+const updateCategory = async (req, res) => {
+    let category, err,
+    categoryId = req.params['id'];
+    if(!categoryId) return ReE(res, 'Category ID is required.', 422);
+    categoryId = decodeHash(categoryId);
+    [err, category] = await to(
+        Category.findById(categoryId)
+    );
+    if(err) return ReE(res, err, 422);
+    if(!category) return ReE(res, 'Category not found', 422);
+
+    const uploadPath = `public/images/categories/${categoryId}/`;
+    var storage = multer.diskStorage({
+        destination: uploadPath,
+        filename: (req, file, callback) => { 
+            callback(null, file.originalname);
+        }
+    });
+    var upload = multer({storage}).single('icon');
+    upload(req, res, async (err) => {
+        if(err) return ReE(res, err, 422);
+        // No error occured.
+        let data = req.body;
+        if(res.req.file && res.req.file.filename) {
+            data['icon'] = res.req.file.filename;
+        }
+        category.set(data);
+        [err, category] = await to(category.save());
+        if(err) return ReE(res, err, 422);
+        category = hashColumns(['id'], category);
+        return ReS(res, {data: category}, 200);
+    });
+}
+module.exports.updateCategory = updateCategory;

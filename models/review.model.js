@@ -60,15 +60,19 @@ module.exports = (sequelize, DataTypes) => {
         deletedAt: 'delete_time',
         paranoid: true,
 
-        freezeTableName: true
+        freezeTableName: true,
+        tableName: 'review'
     });
     
-    Model.associate = (models) => {
-        this.Entity = Model.belongsTo(models.Entity, {
-            foreignKey: 'entity_id'
+    Model.associate = function(models){
+        this.Entity = this.belongsTo(models.Entity, {
+            foreignKey: 'entityId'
         });
-        this.User = Model.belongsTo(models.User, {
-            foreignKey: 'user_id'
+        this.User = this.belongsTo(models.User, {
+            foreignKey: 'userId'
+        });
+        this.Vote = this.hasMany(models.Vote, {
+            foreignKey: 'reviewId'
         });
     };
 

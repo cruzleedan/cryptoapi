@@ -23,7 +23,15 @@ const hashColumns = (columns, rows) => {
                     for(let key in obj) {
                         obj[key] = obj[key] instanceof Array ? obj[key] : [obj[key]];
                         obj[key].forEach(c => {
-                            row[key][c] = hashids.encode(row[key][c]);
+                            if(row[key] instanceof Array) {
+                                row[key] = row[key].map(subRow => {
+                                    subRow[c] = hashids.encode(subRow[c]);
+                                    return subRow;
+                                })
+                            }
+                            else {
+                                row[key][c] = hashids.encode(row[key][c]);
+                            }
                         });
                     }
                 }

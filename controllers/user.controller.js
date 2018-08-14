@@ -46,6 +46,7 @@ const hasUserReviewedEntity = async(req, res) => {
         })
     );
     if(err) return ReE(res, err, 422);
+    if(!review) return ReS(res, {data: []});
     review = hashColumns(['id'], review);
     return ReS(res, {success: true, data: review});
 }
@@ -57,7 +58,8 @@ const checkUsernameNotTaken = async (req, res) => {
     if(!username) return ReE(res, 'username is required', 422);
     [err, user] = await to(
         User.findOne({
-            where: {username}
+            where: {username},
+            paranoid: true
         })
     );
     if(err) return ReE(res, err, 422);
@@ -85,7 +87,7 @@ const get = async function(req, res){
 module.exports.get = get;
 
 const findUserById = async (req, res) => {
-    const id = req.params['id'];
+    let id = req.params['id'];
     if(!id) return ReE(res, 'ID is required', 422);
     id = decodeHash(id);
     let err, user;
@@ -232,13 +234,51 @@ const update = async function(req, res){
 }
 module.exports.update = update;
 
+const updateUserProfile = async function(req, res){
+    let err, user, data,
+    id = req.params['id'] ? decodeHash(req.params['id']) : null;
+    if(!id) return ReE(res, 'User ID is required', 422);
+    
+    [err, user] = await to(
+        User.findById(id)
+    );
+    if(err) return ReE(res, err, 422);
+
+    const appDir = path.dirname(require.main.filename);
+    const uploadPath = `public/images/avatars/${user.id}/`;
+    var storage = multer.diskStorage({
+        destination: uploadPath,
+        filename: (req, file, callback) => { 
+            callback(null, file.originalname);
+        }
+    });
+    var upload = multer({storage}).single('avatar');
+    upload(req, res, async (err) => {
+        if(err) return ReE(res, err, 422);
+        // No error occured.
+        let data = req.body;
+        if(res.req.file && res.req.file.filename) {
+            data['avatar'] = res.req.file.filename;
+        }
+        data['roles'] = data.roles ? JSON.parse(data.roles) : '';
+        user.set(data);
+        [err, user] = await to(user.save());
+        if(err){
+            if(err.message=='Validation error') err = 'The email address or phone number is already in use';
+            return ReE(res, err);
+        }
+        return ReS(res, {message :'Updated User: '+user.email, user});
+    });
+}
+module.exports.updateUserProfile = updateUserProfile;
+
 const updateProfile = async function(req, res){
     let err, user, data
     user = req.user;
     
 
     const appDir = path.dirname(require.main.filename);
-    const uploadPath = `server/public/images/avatars/${user.id}/`;
+    const uploadPath = `public/images/avatars/${user.id}/`;
     var storage = multer.diskStorage({
         destination: uploadPath,
         filename: (req, file, callback) => { 
@@ -250,9 +290,9 @@ const updateProfile = async function(req, res){
         if(err) return ReE(res, err, 422);
         // No error occured.
         const data = req.body;
-        data['avatar'] = res.req.file.filename || null;
-        console.log('data ', data);
-        console.log('user ', user);
+        if(res.req.file && res.req.file.filename) {
+            data['avatar'] = res.req.file.filename;
+        }
         user.set(data);
         [err, user] = await to(user.save());
         if(err){
