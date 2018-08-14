@@ -47,6 +47,7 @@ const postNewReview = async (req, res) => {
                 })
                 .then(review => updateReviewRtng(res, review))
                 .then(review => {
+                    review = hashColumns(['id', 'entityId', 'userId'], review);
                     return ReS(res, {data: review, created: false, success: true}, 200); 
                 })
                 .catch(err => {
@@ -61,6 +62,7 @@ const postNewReview = async (req, res) => {
                 })
                 .then(review => updateReviewRtng(res, review))
                 .then(review => { 
+                    review = hashColumns(['id', 'entityId', 'userId'], review);
 	            	return ReS(res, {data: review, created: true, success: true}, 201); 
 	        	})
 	        	.catch(err => {

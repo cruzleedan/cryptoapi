@@ -204,7 +204,7 @@ const getEntityById = async (req, res) => {
     entity.averageRating = averageRating;
     entity.poorRating = poorRating;
     entity.badRating = badRating;
-    entity.links = entity.links ? JSON.parse(entity.links) : [];
+    entity.links = entity.links && entity.links instanceof Array ? entity.links : JSON.parse(entity.links || "[]");
     return ReS(res, {data: entity});
     
     
