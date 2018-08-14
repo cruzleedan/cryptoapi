@@ -8,6 +8,16 @@ const authService       = require('../services/auth.service');
 const { to, ReE, ReS }  = require('../services/util.service');
 const { hashColumns, decodeHash }  = require('../services/hash.service');
 
+const filterFieldsFn = (user, fields) => {
+    fields = fields instanceof Array ? fields : ['create_time', 'update_time', 'delete_time', 'password', 'facebookId', 'authMethod'];
+    return Object.keys(user).filter(key => {
+        return !fields.includes(key);
+    }).reduce((acc, field) => {
+        acc[field] = user[field];
+        return acc;
+    }, {})
+};
+
 const create = async function(req, res){
     res.setHeader('Content-Type', 'application/json');
     const body = req.body;
@@ -22,7 +32,10 @@ const create = async function(req, res){
         [err, user] = await to(authService.createUser(body, res));
         
         if(err) return ReE(res, err, 422);
-        return ReS(res, {message:'Successfully created new user.', user:user.toWeb(), token:user.getJWT()}, 201);
+        const token = user.getJWT();
+        user = hashColumns(['id'], user);
+        user = filterFieldsFn(user);
+        return ReS(res, {message:'Successfully created new user.', user, token}, 201);
     }
 }
 module.exports.create = create;
@@ -83,6 +96,7 @@ const get = async function(req, res){
     user = hashColumns(['id'], user);
     user.reviewsCount = reviewsCount;
     user.roles = user.roles && user.roles instanceof Array ? user.roles : JSON.parse(user.roles || "[]");
+    user = filterFieldsFn(user);
     return ReS(res, {user});
 }
 module.exports.get = get;
@@ -98,6 +112,7 @@ const findUserById = async (req, res) => {
     if(err) return ReE(res, err, 422);
     user = hashColumns(['id'], user);
     user.roles = user.roles && user.roles instanceof Array ? user.roles : JSON.parse(user.roles || "[]");
+    user = filterFieldsFn(user);
     return ReS(res, {data: user});
 }
 module.exports.findUserById = findUserById;
@@ -235,14 +250,7 @@ const update = async function(req, res){
     }
     user = hashColumns(['id'], user);
     user.roles = user.roles && user.roles instanceof Array ? user.roles : JSON.parse(user.roles || "[]");
-    user = Object.assign({}, 
-        Object.keys(user).filter(key => {
-            return !['id', 'create_time', 'update_time', 'password', 'facebookId', 'authMethod'].includes(key);
-        }).reduce(acc, field => {
-            acc[field] = user[field];
-            return acc;
-        }, {})
-    );
+    user = filterFieldsFn(user);
     return ReS(res, {message :'Updated User: '+user.email, user});
 }
 module.exports.update = update;
@@ -280,15 +288,9 @@ const updateUserProfile = async function(req, res){
             if(err.message=='Validation error') err = 'The email address or phone number is already in use';
             return ReE(res, err);
         }
+        user = hashColumns(['id'], user);
         user.roles = user.roles && user.roles instanceof Array ? user.roles : JSON.parse(user.roles || "[]");
-        user = Object.assign({}, 
-            Object.keys(user).filter(key => {
-                return !['id', 'create_time', 'update_time', 'password', 'facebookId', 'authMethod'].includes(key);
-            }).reduce(acc, field => {
-                acc[field] = user[field];
-                return acc;
-            }, {})
-        );
+        user = filterFieldsFn(user);
         return ReS(res, {message :'Updated User: '+user.email, user});
     });
 }
@@ -321,15 +323,9 @@ const updateProfile = async function(req, res){
             if(err.message=='Validation error') err = 'The email address or phone number is already in use';
             return ReE(res, err);
         }
+        user = hashColumns(['id'], user);
         user.roles = user.roles && user.roles instanceof Array ? user.roles : JSON.parse(user.roles || "[]");
-        user = Object.assign({}, 
-            Object.keys(user).filter(key => {
-                return !['id', 'create_time', 'update_time', 'password', 'facebookId', 'authMethod'].includes(key);
-            }).reduce(acc, field => {
-                acc[field] = user[field];
-                return acc;
-            }, {})
-        );
+        user = filterFieldsFn(user);
         return ReS(res, {message :'Updated User: '+user.email, user});
     });
 }
@@ -354,6 +350,7 @@ const login = async function(req, res){
     const token = user.getJWT();
     user = hashColumns(['id'], user);
     user.roles = user.roles && user.roles instanceof Array ? user.roles : JSON.parse(user.roles || "[]");
+    user = filterFieldsFn(user);
     return ReS(res, {token, user});
 }
 module.exports.login = login;
@@ -361,7 +358,10 @@ module.exports.login = login;
 const fbLogin = async function(req, res){
     res.setHeader('Content-Type', 'application/json');
     let user = req.user;
+    user = hashColumns(['id'], user);
+    const token = user.getJWT();
     user.roles = user.roles && user.roles instanceof Array ? user.roles : JSON.parse(user.roles || "[]");
-    return ReS(res, {token:user.getJWT(), user:user.toWeb()});
+    user = filterFieldsFn(user);
+    return ReS(res, {token, user});
 }
 module.exports.fbLogin = fbLogin;
