@@ -1,10 +1,18 @@
 // middleware for doing role-based permissions
- const permit = (...allowed) => {
-	const isAllowed = (userRoles) => { return allowed.some(allowedRole=>userRoles.includes(allowedRole)); };
-
+const permit = (...allowed) => {
 	// return a middleware
 	return (req, res, next) => {
-		if (req.user && isAllowed(req.user.roles)) {
+		const isAllowed = (userRoles) => { 
+			return allowed.some(allowedRole => {
+				if(typeof allowedRole === 'function') {
+					console.log('----------------------------------- EXECUTE FUNCTION ---------------------------------------');
+					return allowedRole(req, res, next);
+				}
+				return userRoles.includes(allowedRole);
+			}); 
+		};
+		
+		if (req.user && isAllowed(req.user.roles || [])) {
 			next(); // role is allowed, so continue on the next middleware	
 		}
 		else {

@@ -1,7 +1,7 @@
 const CONFIG = require('../../config');
 const multer = require('multer');
-const { Sequelize, sequelize, Entity, Review, User } = require('../../models');
-const {TE, to, ReS, ReE} = require('../../services/util.service');
+const { Sequelize, sequelize, Entity, Review, User, Category } = require('../../models');
+const {TE, to, ReS, ReE, tryParseJSON} = require('../../services/util.service');
 const {hashColumns, decodeHash} = require('../../services/hash.service');
 const {filterFn} = require('../../helpers/filter.helper');
 const Op = Sequelize.Op;
@@ -60,6 +60,7 @@ const postNewEntity = async (req, res) => {
 }
 module.exports.postNewEntity = postNewEntity;
 const updateEntity = async (req, res) => {
+    console.log('------------------------- START --------------------------');
     if(!req.user) return ReE(res, 'Unauthorized', 422);
     let entityId = req.params['id'];
     if(!entityId) return ReE(res, 'Entity ID is required');
@@ -163,6 +164,9 @@ const getEntityById = async (req, res) => {
             include: [{
                 model: User,
                 attributes: ['username']
+            }, {
+                model: Category, 
+                attributes: ['category', 'id']
             }],
             paranoid: true
         })
@@ -198,7 +202,7 @@ const getEntityById = async (req, res) => {
                 break;
         }
     }
-    entity = hashColumns(['id', 'categoryId', 'userId'], entity);
+    entity = hashColumns(['id', 'categoryId', 'userId', {'Category': ['id']}], entity);
     entity.excellentRating = excellentRating;
     entity.greatRating = greatRating;
     entity.averageRating = averageRating;
@@ -215,8 +219,9 @@ const getReviews = async (req, res) => {
     let err, reviews;
     const queryParams = req.query;
     let entityId = req.params.id;
-    const filter = queryParams.filter,
-    filterField = queryParams.filterField || 'user_id',
+    let filter = tryParseJSON(queryParams.filter);
+    filter = filter ? filter : queryParams.filter;
+    const filterField = queryParams.filterField || 'user_id',
     sortDirection = queryParams.sortDirection || 'asc',
     sortField = queryParams.sortField || 'createdAt',
     pageNumber = parseInt(queryParams.pageNumber),

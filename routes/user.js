@@ -23,6 +23,12 @@ module.exports = (router, passport) => {
 		permit('admin'), 
 		UserController.findUserById
 	);
+	router.get('/user/entities', 
+		[],
+		validate,
+		passport.authenticate('jwt', {session:false}), 
+		UserController.getUserEntities
+	);
 	router.get('/user/reviews', 
 		[],
 		validate,
@@ -36,6 +42,21 @@ module.exports = (router, passport) => {
 		validate,
 		passport.authenticate('jwt', {session:false}), 
 		UserController.hasUserReviewedEntity
+	);
+	router.get('/user/entity/:id/owner',
+		[
+			check('id').not().isEmpty().withMessage('Entity ID is required'),
+		],
+		passport.authenticate('jwt', {session: false}),
+		UserController.doesUserOwnsEntity
+	);
+	router.delete('/user/entity/:id', 
+		[
+			check('id').not().isEmpty().withMessage('Entity ID is required'),
+		],
+		validate,
+		passport.authenticate('jwt', {session: false}),
+		UserController.deleteUserEntity
 	);
 	router.delete('/user/review/:id', 
 		[

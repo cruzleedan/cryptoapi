@@ -5,22 +5,62 @@ const { permit } = require('../middleware/permission');
 const {Review} = require('../models');
 const { check } = require('express-validator/check');
 const { validate } = require('../middleware/validation');
-
+const { to, ReE, ReS }  = require('../services/util.service');
+const { Entity } = require('../models');
 module.exports = (router, passport) => {
 	router.get('/entities', EntityController.getEntities);
+
 	router.put('/entities/new',
 		passport.authenticate('jwt', {session:false}), 
 		EntityController.postNewEntity
 	);
+
 	router.put('/entities/:id/edit',
 		[
 			check('id').not().isEmpty().withMessage('Entity ID is required.')
 		],
 		validate,
 		passport.authenticate('jwt', {session:false}),
-		permit('admin'),
+		permit('admin', async (req, res, next) => {
+			console.log('------------------------- START --------------------------');
+			const user = req.user;
+			const id = req.params['id'];
+			let entity,err;
+			[err, entity] = await to(Entity.findById(id));
+			if(err) return false;
+			if(!entity) return false;
+			if(user.hasEntity(entity)) {
+				console.log('------------------------- END --------------------------');
+				next();
+			}
+			return false;
+		}),
 		EntityController.updateEntity
 	);
+
+	router.post('/entities/:id/edit',
+		[
+			check('id').not().isEmpty().withMessage('Entity ID is required.')
+		],
+		validate,
+		passport.authenticate('jwt', {session:false}),
+		permit('admin', async (req, res, next) => {
+			console.log('------------------------- START --------------------------');
+			const user = req.user;
+			const id = req.params['id'];
+			let entity,err;
+			[err, entity] = await to(Entity.findById(id));
+			if(err) return false;
+			if(!entity) return false;
+			if(user.hasEntity(entity)) {
+				console.log('------------------------- END --------------------------');
+				next();
+			}
+			return false;
+		}),
+		EntityController.updateEntity
+	);
+
 	router.delete('/entities/:id',
 		[
 			check('id').not().isEmpty().withMessage('Entity ID is required.')
@@ -30,7 +70,9 @@ module.exports = (router, passport) => {
 		permit('admin'),
 		EntityController.deleteEntity
 	);
+
 	router.get('/entities/:id', EntityController.getEntityById);
+
 	router.put('/entities/:id/reviews/new',
 		[
 			check('id').not().isEmpty().withMessage('Entity ID is required'),
@@ -41,6 +83,7 @@ module.exports = (router, passport) => {
 		passport.authenticate('jwt', {session: false}), 
 		ReviewController.postNewReview
 	);
+
 	router.put('/entities/:id/reviews/update', 
 		[
 			check('id').not().isEmpty().withMessage('Entity ID is required')
@@ -49,6 +92,7 @@ module.exports = (router, passport) => {
 		passport.authenticate('jwt', {session: false}), 
 		ReviewController.updateReview
 	);
+
 	router.put('/entities/reviews/:reviewId/vote', 
 		[
 			check('reviewId').not().isEmpty().withMessage('Review ID is required'),
@@ -58,6 +102,7 @@ module.exports = (router, passport) => {
 		passport.authenticate('jwt', {session: false}), 
 		VoteController.vote
 	);
+
 	router.get('/entities/:id/reviews', 
 		[
 			check('id').not().isEmpty().withMessage('Entity ID is required')

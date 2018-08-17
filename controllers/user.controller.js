@@ -40,6 +40,22 @@ const create = async function(req, res){
 }
 module.exports.create = create;
 
+const doesUserOwnsEntity = async(req, res) => {
+    let user = req.user;
+    let id = req.params['id'];
+    id = decodeHash(id);
+    let err, entity;
+    [err, entity] = await to(Entity.findById(id));
+    
+    if(err) return ReE(res, err, 422);
+    if(!entity) return ReE(res, 'Entity not found', 422);
+
+    [err, owner] = await to(user.hasEntity(entity));
+    if(err) return ReE(res, err, 422);
+    return ReS(res, {data: !!(owner)}, 200);
+}
+module.exports.doesUserOwnsEntity = doesUserOwnsEntity;
+
 const hasUserReviewedEntity = async(req, res) => {
     let user = req.user;
     let entityId = req.params['id'];
@@ -60,7 +76,7 @@ const hasUserReviewedEntity = async(req, res) => {
     );
     if(err) return ReE(res, err, 422);
     if(!review) return ReS(res, {data: []});
-    review = hashColumns(['id'], review);
+    review = hashColumns(['id', 'userId', 'entityId', {'Entity': ['id']}], review);
     return ReS(res, {success: true, data: review});
 }
 module.exports.hasUserReviewedEntity = hasUserReviewedEntity;
@@ -83,9 +99,17 @@ module.exports.checkUsernameNotTaken = checkUsernameNotTaken;
 const get = async function(req, res){
     res.setHeader('Content-Type', 'application/json');
     let user = req.user;
-    let err, reviewCount;
+    let err, reviewCount, entitiesCount;
     [err, reviewsCount] = await to(
         Review.count({
+            where: {
+                userId: user.id
+            },
+            paranoid: true
+        })
+    );
+    [err, entitiesCount] = await to(
+        Entity.count({
             where: {
                 userId: user.id
             },
@@ -95,6 +119,7 @@ const get = async function(req, res){
     if(err) return ReE(res, err, 422);
     user = hashColumns(['id'], user);
     user.reviewsCount = reviewsCount;
+    user.entitiesCount = entitiesCount;
     user.roles = user.roles && user.roles instanceof Array ? user.roles : JSON.parse(user.roles || "[]");
     user = filterFieldsFn(user);
     return ReS(res, {user});
@@ -153,6 +178,42 @@ const getUsers = async (req, res) => {
 }
 module.exports.getUsers = getUsers;
 
+const getUserEntities = async (req, res) => {
+    let err, reviews;
+    const queryParams = req.query,
+    userId = req.user.id,
+    filter = queryParams.filter,
+    sortDirection = queryParams.sortDirection || 'asc',
+    sortField = queryParams.sortField || 'createdAt',
+    pageNumber = parseInt(queryParams.pageNumber),
+    pageSize = parseInt(queryParams.pageSize) || 10,
+    initialPos = isNaN(pageNumber) ? 0 : pageNumber * pageSize,
+    finalPos = initialPos + pageSize,
+    filterFields = [];
+    
+
+    
+    const config = {
+        where: {userId},
+        attributes: ['id','name', 'desc', 'rating', 'reviewCount', 'image', 'createdAt'],
+        order: [[sortField, sortDirection]],
+        offset: initialPos,
+        limit: finalPos,
+        paranoid: true
+    };
+    
+    return filterFn(res, {
+        config,
+        filter,
+        filterFields,
+        model: Entity,
+        count: false,
+        hashColumns: ['id']
+    });
+
+}
+module.exports.getUserEntities = getUserEntities;
+
 const getUserReviews = async (req, res) => {
     let err, reviews;
     const queryParams = req.query,
@@ -194,6 +255,30 @@ const getUserReviews = async (req, res) => {
 
 }
 module.exports.getUserReviews = getUserReviews;
+
+const deleteUserEntity = async (req, res) => {
+    let user = req.user, 
+    entityId = req.params['id'],
+    entity, err;
+    entityId = decodeHash(entityId);
+    [err, entity] = await to(
+        Entity.findOne({
+            where: {userId:user.id, id: entityId}
+        })
+    );
+    if(err) return ReE(res, 'Cannot find the record', 422);
+
+    return sequelize.transaction(transaction => {
+        return entity.destroy()
+    })
+    .then(entity => {
+        return ReS(res, {data: entity}, 200); 
+    })
+    .catch(err => {
+        return ReE(res, err, 422);
+    });
+}
+module.exports.deleteUserEntity = deleteUserEntity;
 
 const deleteUserReview = async (req, res) => {
     let user = req.user, 
