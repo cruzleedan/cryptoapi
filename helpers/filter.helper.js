@@ -56,7 +56,7 @@ const parseFieldsToJSON = (fields, rows) => {
     if(!fields.length) return rows;
 
     rows = rows.map(row => {
-        parseToJSON.forEach(field => {
+        fields.forEach(field => {
             if(row.hasOwnProperty(field) && !(row[field] instanceof Array)) {
                 row[field] = JSON.parse(row[field]);
             }
