@@ -7,6 +7,7 @@ const { filterFn } = require('../helpers/filter.helper');
 const authService       = require('../services/auth.service');
 const { to, ReE, ReS }  = require('../services/util.service');
 const { hashColumns, decodeHash }  = require('../services/hash.service');
+const fs = require('fs');
 
 const filterFieldsFn = (user, fields) => {
     fields = fields instanceof Array ? fields : ['create_time', 'update_time', 'delete_time', 'password', 'facebookId', 'authMethod'];
@@ -17,21 +18,32 @@ const filterFieldsFn = (user, fields) => {
         return acc;
     }, {})
 };
-
 const create = async function(req, res){
-    res.setHeader('Content-Type', 'application/json');
     const body = req.body;
-
-    if(!body.unique_key && !body.email && !body.phone){
+    let avatar = res.req && res.req.file && res.req.file.filename ? res.req.file : '';
+    let matchedPassword = body.matchedPassword ? JSON.parse(body.matchedPassword) : {};
+    if(avatar) {
+        body['avatar'] = avatar.filename;
+    }
+    if(!body.unique_key && !body.email && !body.username){
         return ReE(res, 'Please enter an email or username to register.');
-    } else if(!body.password){
+    } else if(!matchedPassword || !matchedPassword.new){
         return ReE(res, 'Please enter a password to register.');
     }else{
         let err, user;
-
+        body.password = matchedPassword.new;
+        delete body.matchedPassword;
         [err, user] = await to(authService.createUser(body, res));
         
         if(err) return ReE(res, err, 422);
+        console.log('USER', user);
+        if(user && avatar && fs.existsSync(avatar.path)){
+            fs.rename(avatar.path, `./public/images/avatars/${user.id}/${avatar.filename}`, (err) => {
+                if (err) throw err;
+                console.log('Rename complete!');
+            });
+        }
+
         const token = user.getJWT();
         user = hashColumns(['id'], user);
         user = filterFieldsFn(user);
@@ -40,8 +52,31 @@ const create = async function(req, res){
 }
 module.exports.create = create;
 const createUserProfile = async function(req, res){
-    console.log('CREATE USER PROFILE');
-    return ReS(res, {msg: 'create user now'});
+    const avatar = res.req.file;
+    if(fs.existsSync(avatar.path)){
+        fs.rename(avatar.path, `./public/images/avatars/${avatar.filename}`, (err) => {
+            if (err) throw err;
+            console.log('Rename complete!');
+        });
+    }
+    const body = req.body;
+    console.log(res.req.file);
+    return ReS(res, {body, 'file': res.req.file});
+    // if(!body.unique_key && !body.email && !body.phone){
+    //     return ReE(res, 'Please enter an email or username to register.');
+    // } else if(!body.password){
+    //     return ReE(res, 'Please enter a password to register.');
+    // }else{
+    //     let err, user;
+
+    //     [err, user] = await to(authService.createUser(body, res));
+        
+    //     if(err) return ReE(res, err, 422);
+    //     const token = user.getJWT();
+    //     user = hashColumns(['id'], user);
+    //     user = filterFieldsFn(user);
+    //     return ReS(res, {message:'Successfully created new user.', user, token}, 201);
+    // }
     // let err, user, data,
     // id = req.params['id'] ? decodeHash(req.params['id']) : null;
     // if(!id) return ReE(res, 'User ID is required', 422);
@@ -488,8 +523,8 @@ module.exports.login = login;
 const fbLogin = async function(req, res){
     res.setHeader('Content-Type', 'application/json');
     let user = req.user;
-    user = hashColumns(['id'], user);
     const token = user.getJWT();
+    user = hashColumns(['id'], user);
     user.roles = user.roles && user.roles instanceof Array ? user.roles : JSON.parse(user.roles || "[]");
     user = filterFieldsFn(user);
     return ReS(res, {token, user});

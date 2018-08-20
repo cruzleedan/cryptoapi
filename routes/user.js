@@ -81,7 +81,7 @@ module.exports = (router, passport) => {
     router.post('/users', UserController.create);
     router.put('/users/new', 
     	validateImageFile('avatar'), 
-    	UserController.createUserProfile
+    	UserController.create
     );
 	router.post('/users/login', 
 		[

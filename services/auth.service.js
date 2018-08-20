@@ -32,6 +32,7 @@ const createUser = async (userInfo, res) => {
     unique_key = getUniqueKeyFromBody(userInfo);
     if (!unique_key) TE('Please enter your email or username.');
 
+    console.log('Validating unique key ', unique_key);
     if (validator.isEmail(unique_key)) {
         auth_info.method = 'email';
         userInfo.email = unique_key;
@@ -45,8 +46,9 @@ const createUser = async (userInfo, res) => {
     } else if (validator.isAlphanumeric(unique_key)) { //checks if only username was sent
         auth_info.method = 'username';
         userInfo.username = unique_key;
-
+        console.log('Create user with this info', userInfo);
         [err, user] = await to(User.create(userInfo));
+        console.log('user created', user);
         if (err) ReE(res, {username: 'User already exists with that username'}, 422);
 
         return user;
