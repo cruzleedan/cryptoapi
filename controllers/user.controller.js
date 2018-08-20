@@ -39,6 +39,51 @@ const create = async function(req, res){
     }
 }
 module.exports.create = create;
+const createUserProfile = async function(req, res){
+    console.log('CREATE USER PROFILE');
+    return ReS(res, {msg: 'create user now'});
+    // let err, user, data,
+    // id = req.params['id'] ? decodeHash(req.params['id']) : null;
+    // if(!id) return ReE(res, 'User ID is required', 422);
+    
+    // [err, user] = await to(
+    //     User.findById(id)
+    // );
+    // if(err) return ReE(res, err, 422);
+
+    // const appDir = path.dirname(require.main.filename);
+    // const uploadPath = `public/images/avatars/${user.id}/`;
+
+    
+        
+    // var storage = multer.diskStorage({
+    //     destination: uploadPath,
+    //     filename: (req, file, callback) => { 
+    //         callback(null, file.originalname);
+    //     }
+    // });
+    // var upload = multer({storage}).single('avatar');
+    // upload(req, res, async (err) => {
+    //     if(err) return ReE(res, err, 422);
+    //     // No error occured.
+    //     let data = req.body;
+    //     if(res.req.file && res.req.file.filename) {
+    //         data['avatar'] = res.req.file.filename;
+    //     }
+    //     data['roles'] = data.roles ? JSON.parse(data.roles) : '';
+    //     user.set(data);
+    //     [err, user] = await to(user.save());
+    //     if(err){
+    //         if(err.message=='Validation error') err = 'The email address or phone number is already in use';
+    //         return ReE(res, err);
+    //     }
+    //     user = hashColumns(['id'], user);
+    //     user.roles = user.roles && user.roles instanceof Array ? user.roles : JSON.parse(user.roles || "[]");
+    //     user = filterFieldsFn(user);
+    //     return ReS(res, {message :'Updated User: '+user.email, user});
+    // });
+}
+module.exports.createUserProfile = createUserProfile;
 
 const doesUserOwnsEntity = async(req, res) => {
     let user = req.user;

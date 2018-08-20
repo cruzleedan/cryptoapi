@@ -1,6 +1,6 @@
 const UserController 	= require('../controllers/user.controller');
 const { permit } = require('../middleware/permission');
-const { validate } = require('../middleware/validation');
+const { validate, validateImageFile } = require('../middleware/validation');
 const { check } = require('express-validator/check');
 module.exports = (router, passport) => {
 	router.get('/user', passport.authenticate('jwt', {session: false}), UserController.get);
@@ -79,6 +79,10 @@ module.exports = (router, passport) => {
 	router.put('/user/profile', passport.authenticate('jwt', {session:false}), UserController.updateProfile);
 	router.put('/user/password-reset', passport.authenticate('jwt', {session:false}), UserController.passwordReset);
     router.post('/users', UserController.create);
+    router.put('/users/new', 
+    	validateImageFile('avatar'), 
+    	UserController.createUserProfile
+    );
 	router.post('/users/login', 
 		[
 			check('username').not().isEmpty().withMessage('Username is required'),
