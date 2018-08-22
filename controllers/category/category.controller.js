@@ -25,7 +25,7 @@ const getCategories = async (req, res) => {
     categories = categories.map(category => {
         if(!category.hasOwnProperty('sub')){
         }
-        category = Object.assign({}, category, {link: category.id, open: false});
+        category = Object.assign({}, category, {link: `/category/${category.id}`, open: false});
         return category;
     });
     return ReS(res, {data: categories} , 200);

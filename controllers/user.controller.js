@@ -6,8 +6,11 @@ const { updateReviewRtng } = require('../helpers/review.helper');
 const { filterFn } = require('../helpers/filter.helper');
 const authService       = require('../services/auth.service');
 const { to, ReE, ReS }  = require('../services/util.service');
+const { smtpTransport } = require('../services/mail.service');
 const { hashColumns, decodeHash }  = require('../services/hash.service');
 const fs = require('fs');
+const crypto = require('crypto');
+const CONFIG = require('../config');
 
 const filterFieldsFn = (user, fields) => {
     fields = fields instanceof Array ? fields : ['create_time', 'update_time', 'delete_time', 'password', 'facebookId', 'authMethod'];
@@ -18,6 +21,48 @@ const filterFieldsFn = (user, fields) => {
         return acc;
     }, {})
 };
+const forgotPassword = async (req, res) => {
+    const username = req.query['username'];
+    let user, err;
+    if(!username) return ReE(res, 'username is required', 422);
+    [err, user] = await to(
+        User.findOne({
+            where: {
+                [Op.or]: [{username}, {email: username}]
+            },
+            paranoid: true
+        })
+    );
+    if(err) return ReE(res, err, 422);
+    if(!user) return ReE(res, 'User not found', 422);
+
+    const resetPasswordToken = crypto.randomBytes(30).toString('hex');
+    const resetPasswordExpires = Date.now() + 86400000;
+    user.set({resetPasswordToken, resetPasswordExpires});
+    [err, user] = await to(user.save());
+    if(err) return ReE(res, err, 422);
+
+    var data = {
+        to: user.email,
+        from: CONFIG.mailer_user,
+        template: 'forgot-password-email',
+        subject: 'Reset Password',
+        context: {
+            url: `${ CONFIG.frontend_domain }/auth/forgot-password-reset?token=${ resetPasswordToken }`,
+            name: user.username || user.firstname
+        }
+    };
+    if(!data.to) return ReE(res, 'Email not found', 422);
+    smtpTransport.sendMail(data, function(err) {
+        if (!err) {
+            return ReS(res, { data: 'Kindly check your email for further instructions' });
+        } else {
+            return ReE(res, err, 422);
+        }
+    });
+}
+module.exports.forgotPassword = forgotPassword;
+
 const create = async function(req, res){
     const body = req.body;
     let avatar = res.req && res.req.file && res.req.file.filename ? res.req.file : '';
@@ -401,6 +446,100 @@ const passwordReset = async (req, res) => {
     return ReS(res, {success: true, data: true});
 }
 module.exports.passwordReset = passwordReset;
+
+
+const forgotPasswordReset = async (req, res, next) => {
+    const resetPasswordToken = req.body['token'],
+    newPassword = req.body.newPassword || '';
+    let user, err;
+    [err, user] = await to(
+        User.findOne({
+            where: {
+                resetPasswordToken,
+                resetPasswordExpires: {
+                    $gt: Date.now()
+                }
+            }
+        })
+    );
+    if(err) return ReE(res, err, 422);
+    if(!user) return ReE(res, 'Password reset token is invalid or has expired.', 422);
+    user.set({
+        resetPasswordToken: null,
+        resetPasswordExpires: null
+    });
+
+    user.password = newPassword;
+    [err, currUser] = await to(user.save());
+    if(err) return ReE(res, err, 422);
+
+    var data = {
+        to: user.email,
+        from: CONFIG.mailer_user,
+        template: 'reset-password-email',
+        subject: 'Password Reset Confirmation',
+        context: {
+            name: user.username || user.firstname
+        }
+    };
+    if(!data.to) return ReE(res, 'Email not found', 422);
+    smtpTransport.sendMail(data, function(err) {
+        if (!err) {
+            return ReS(res, {success: true, data: true});
+        } else {
+            return ReE(res, err, 422);
+        }
+    });
+
+  // User.findOne({
+  //   reset_password_token: req.body.token,
+  //   reset_password_expires: {
+  //     $gt: Date.now()
+  //   }
+  // }).exec(function(err, user) {
+  //   if (!err && user) {
+  //     if (req.body.newPassword === req.body.verifyPassword) {
+  //       user.hash_password = bcrypt.hashSync(req.body.newPassword, 10);
+  //       user.reset_password_token = undefined;
+  //       user.reset_password_expires = undefined;
+  //       user.save(function(err) {
+  //         if (err) {
+  //           return res.status(422).send({
+  //             message: err
+  //           });
+  //         } else {
+  //           var data = {
+  //             to: user.email,
+  //             from: email,
+  //             template: 'reset-password-email',
+  //             subject: 'Password Reset Confirmation',
+  //             context: {
+  //               name: user.fullName.split(' ')[0]
+  //             }
+  //           };
+
+  //           smtpTransport.sendMail(data, function(err) {
+  //             if (!err) {
+  //               return res.json({ message: 'Password reset' });
+  //             } else {
+  //               return done(err);
+  //             }
+  //           });
+  //         }
+  //       });
+  //     } else {
+  //       return res.status(422).send({
+  //         message: 'Passwords do not match'
+  //       });
+  //     }
+  //   } else {
+  //     return res.status(400).send({
+  //       message: 'Password reset token is invalid or has expired.'
+  //     });
+  //   }
+  // });
+};
+module.exports.forgotPasswordReset = forgotPasswordReset;
 
 const update = async function(req, res){
     let err, user, data
