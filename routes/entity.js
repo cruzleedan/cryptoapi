@@ -4,7 +4,7 @@ const VoteController = require('../controllers/vote/vote.controller');
 const { permit } = require('../middleware/permission');
 const {Review} = require('../models');
 const { check } = require('express-validator/check');
-const { validate } = require('../middleware/validation');
+const { validate, validateImageFile } = require('../middleware/validation');
 const { to, ReE, ReS }  = require('../services/util.service');
 const { Entity } = require('../models');
 module.exports = (router, passport) => {
@@ -12,6 +12,7 @@ module.exports = (router, passport) => {
 
 	router.put('/entities/new',
 		passport.authenticate('jwt', {session:false}), 
+		validateImageFile('image'),
 		EntityController.postNewEntity
 	);
 

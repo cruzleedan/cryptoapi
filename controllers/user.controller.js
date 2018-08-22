@@ -83,7 +83,11 @@ const create = async function(req, res){
         if(err) return ReE(res, err, 422);
         console.log('USER', user);
         if(user && avatar && fs.existsSync(avatar.path)){
-            fs.rename(avatar.path, `./public/images/avatars/${user.id}/${avatar.filename}`, (err) => {
+            const dir = `./public/images/avatars/${user.id}`
+            if (!fs.existsSync(dir)){
+                fs.mkdirSync(dir);
+            }
+            fs.rename(avatar.path, `${dir}/${avatar.filename}`, (err) => {
                 if (err) throw err;
                 console.log('Rename complete!');
             });

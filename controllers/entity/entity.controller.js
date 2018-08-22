@@ -8,6 +8,7 @@ const Op = Sequelize.Op;
 const path = require('path');
 const validator = require('validator');
 const findRemoveSync = require('find-remove');
+const fs = require('fs');
 // const getEntityPhoto = async function(req, res, next) {
 //     const appDir = path.dirname(require.main.filename);
 //     const fileName = req.params.filename;
@@ -20,43 +21,43 @@ const postNewEntity = async (req, res) => {
     res.setHeader('Content-Type', 'application/json');
     if(!req.user) return ReE(res, 'Unauthorized', 422);
 
-    const appDir = path.dirname(require.main.filename);
-    const uploadPath = 'public/images/entities/';
-    const storage = multer.diskStorage({
-        destination: uploadPath,
-        filename: (req, file, callback) => { 
-            callback(null, file.originalname);
+    if(validator.isEmpty(req.body.categoryId)) return ReE(res, 'Entity Category is required');
+    req.body.categoryId = decodeHash(req.body.categoryId);
+    if(validator.isEmpty(req.body.desc)) return ReE(res, 'Entity Description is required');
+    if(validator.isEmpty(req.body.name)) return ReE(res, 'Entity Name is required');
+
+    let image = res.req && res.req.file && res.req.file.filename ? res.req.file : '';
+    if(image) {
+        req.body['image'] = image.filename;
+    }
+    // No error occured.
+    Entity.create(Object.assign(req.body,{
+        'userId': req.user.id,
+        'links': JSON.parse(req.body.links) || []
+    })).then(entity => {
+        if(image && fs.existsSync(image.path)){
+            const dir = `./public/images/entities/${entity.id}`
+            if (!fs.existsSync(dir)){
+                fs.mkdirSync(dir);
+            }
+            fs.rename(image.path, `${dir}/${image.filename}`, (err) => {
+                if (err) throw err;
+                console.log('Rename complete!');
+            });
         }
+        console.log('The filename is ' + res.req.file.filename);
+        entity = hashColumns(['id', 'categoryId', 'userId'], entity);
+        entity = Object.keys(entity)
+        .filter(field => !['userId'].includes(field))
+        .reduce((acc, key) => {
+            acc[key] = entity[key];
+            return acc;
+        }, {});
+        return ReS(res, {success: true, data: entity}, 201);
+    }).catch(err => {
+        console.log(err);
+        return ReE(res, err, 422);
     });
-    const upload = multer({storage}).single('image');
-    upload(req, res, (err) => {
-        if(err) return ReE(res, err, 422);
-        
-        if(validator.isEmpty(req.body.categoryId)) return ReE(res, 'Entity Category is required');
-        req.body.categoryId = decodeHash(req.body.categoryId);
-        if(validator.isEmpty(req.body.desc)) return ReE(res, 'Entity Description is required');
-        if(validator.isEmpty(req.body.name)) return ReE(res, 'Entity Name is required');
-        
-        // No error occured.
-        Entity.create(Object.assign(req.body,{
-            'userId': req.user.id,
-            'image': res.req.file.filename || null,
-            'links': JSON.parse(req.body.links) || []
-        })).then(entity => {
-            console.log('The filename is ' + res.req.file.filename);
-            entity = hashColumns(['id', 'categoryId', 'userId'], entity);
-            entity = Object.keys(entity)
-                        .filter(field => !['userId'].includes(field))
-                        .reduce((acc, key) => {
-                            acc[key] = entity[key];
-                            return acc;
-                        }, {});
-            return ReS(res, {success: true, data: entity}, 201);
-        }).catch(err => {
-            console.log(err);
-            return ReE(res, err, 422);
-        });
-    })
 }
 module.exports.postNewEntity = postNewEntity;
 const updateEntity = async (req, res) => {
