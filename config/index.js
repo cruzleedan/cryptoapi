@@ -20,13 +20,19 @@ CONFIG.upload_dir = process.env.UPLOAD_DIR || 'uploads/';
 CONFIG.hashids_salt = process.env.HASHIDS_SALT || 'cryptocaution salt obfuscate lang ung mga ids';
 
 
+CONFIG.mailer_user = process.env.MAILER_USER || 'cryptocaution2@gmail.com';
+CONFIG.mailer_pass = process.env.MAILER_PASS || 'crypt0cauti*n';
+
+
 if (CONFIG.app === 'dev') {
+	CONFIG.domain = `https://localhost:4200`;
     CONFIG.google_client_id = process.env.GOOGLE_CLIENT_ID || '';
     CONFIG.google_client_secret = process.env.GOOGLE_CLIENT_SECRET || 'cryptocaution_authentication';
     CONFIG.fb_client_id = process.env.FB_CLIENT_ID || '186964375335970';
     CONFIG.fb_client_secret = process.env.FB_CLIENT_SECRET || 'adfb63b8b8576aa8b0b370e342e43c96';
 
 } else if(CONFIG.app === 'prod') {
+	CONFIG.domain = '';
     CONFIG.google_client_id = process.env.GOOGLE_CLIENT_ID || '';
     CONFIG.google_client_secret = process.env.GOOGLE_CLIENT_SECRET || 'cryptocaution_authentication';
     CONFIG.fb_client_id = process.env.FB_CLIENT_ID || '186964375335970';

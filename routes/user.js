@@ -91,6 +91,21 @@ module.exports = (router, passport) => {
 		validate,
 		UserController.login
 	);
+	router.post('/user/forgot-password',
+		[
+			check('username').not().isEmpty().withMessage('Username or email is required')
+		],
+		validate,
+		UserController.forgotPassword
+	);
+	router.put('/user/forgot-password-reset',
+		[
+			check('token').not().isEmpty().withMessage('Token is required'),
+			check('newPassword').not().isEmpty().withMessage('New Password is required'),
+		],
+		validate,
+		UserController.forgotPasswordReset
+	);
 	router.post('/users/facebook/token', passport.authenticate('facebook-token', {session: false}), UserController.fbLogin);
 	router.delete('/users', passport.authenticate('jwt', {session:false}), UserController.remove);
 }
