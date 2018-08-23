@@ -53,12 +53,16 @@ const getFieldsOfKeywordDataType = (model, keywordDataType, filterFields) => {
     return fieldsOfSameDataType;
 }
 const parseFieldsToJSON = (fields, rows) => {
+    console.log('Parse fields to json starts');
     if(!fields.length) return rows;
-
+    console.log('Parse fields', fields);
     rows = rows.map(row => {
         fields.forEach(field => {
             if(row.hasOwnProperty(field) && !(row[field] instanceof Array)) {
-                row[field] = JSON.parse(row[field]);
+                try{
+                    row[field] = JSON.parse(row[field]);
+                } catch (e){
+                }
             }
         });
         return row;
@@ -143,15 +147,16 @@ const filterFn = (res, param) => {
                             const ob = {},
                             filterValue = filter;
                             let cond;
-
-                            if(keywordDataType === 'STRING') {
-                                cond = {[Op.like]: `%${filterValue}%`}
-                            } else if(keywordDataType === 'NUMBER') {
-                                cond = +filterValue;
-                            } else if(keywordDataType === 'DATE') {
-                                let dayBefore = new Date(filterValue);
-                                dayBefore.setDate(dayBefore.getDate() + 1);
-                                cond = { [Op.between]: [new Date(filterValue), dayBefore]};
+                            if(filter) {
+                                if(keywordDataType === 'STRING') {
+                                    cond = {[Op.like]: `%${filterValue}%`}
+                                } else if(keywordDataType === 'NUMBER') {
+                                    cond = +filterValue;
+                                } else if(keywordDataType === 'DATE') {
+                                    let dayBefore = new Date(filterValue);
+                                    dayBefore.setDate(dayBefore.getDate() + 1);
+                                    cond = { [Op.between]: [new Date(filterValue), dayBefore]};
+                                }
                             }
                             ob[field] = cond;
                             return ob;
@@ -168,8 +173,11 @@ const filterFn = (res, param) => {
     if(count){
         model.findAndCountAll(config)
         .then(result => {
+            console.log('with count');
             result.rows = hashColumnsFn(hashColumns, result.rows);
+            console.log('1. result rows');
             result.rows = parseFieldsToJSON(parseToJSON, result.rows);
+            console.log('2. result rows');
             return ReS(res, {data: result.rows, count: result.count}, 200);
         }).catch(err => {
             return ReE(res, err, 422);

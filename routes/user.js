@@ -67,6 +67,16 @@ module.exports = (router, passport) => {
 		UserController.deleteUserReview
 	);
 	router.put('/user', passport.authenticate('jwt', {session:false}), UserController.update);
+	router.put('/user/:id/block',
+		[
+			check('id').not().isEmpty().withMessage('User ID is required'),
+			check('block').not().isEmpty().withMessage('Block flag is required')
+		],
+		validate,
+		passport.authenticate('jwt', {session:false}), 
+		permit('admin'), 
+		UserController.toggleUserBlock
+	);
 	router.put('/user/:id/profile',
 		[
 			check('id').not().isEmpty().withMessage('User ID is required')
@@ -81,6 +91,8 @@ module.exports = (router, passport) => {
     router.post('/users', UserController.create);
     router.put('/users/new', 
     	validateImageFile('avatar'), 
+    	passport.authenticate('jwt', {session: false}),
+    	permit('admin'),
     	UserController.create
     );
 	router.post('/users/login', 
