@@ -13,7 +13,7 @@ const crypto = require('crypto');
 const CONFIG = require('../config');
 
 const filterFieldsFn = (user, fields) => {
-    fields = fields instanceof Array ? fields : ['create_time', 'update_time', 'delete_time', 'password', 'facebookId', 'authMethod'];
+    fields = fields instanceof Array ? fields : ['create_time', 'update_time', 'delete_time', 'password', 'facebookId', 'authMethod', 'resetPasswordExpires', 'resetPasswordToken'];
     return Object.keys(user).filter(key => {
         return !fields.includes(key);
     }).reduce((acc, field) => {
@@ -78,6 +78,12 @@ const create = async function(req, res){
         let err, user;
         body.password = matchedPassword.new;
         delete body.matchedPassword;
+        try{
+            body.roles = body.roles ? JSON.parse(body.roles) : [];
+            body.roles = body.roles instanceof Array ? body.roles : [body.roles];
+        } catch (e) {
+
+        }
         [err, user] = await to(authService.createUser(body, res));
         
         if(err) return ReE(res, err, 422);
@@ -276,7 +282,7 @@ const getUsers = async (req, res) => {
     const fields = ['id', 'email', 'avatar', 'firstname', 'lastname', 'gender', 'roles', 'blockFlag', 'desc', 'authMethod', 'avatar', 'score', 'username', 'AcceptedTermsFlag'],
     queryParams = req.query,
     userId = req.user.id,
-    filter = queryParams.filter,
+    filter = queryParams.filter || '',
     filterFields = queryParams.filterFields ? JSON.parse(queryParams.filterFields) : fields,
     sortDirection = queryParams.sortDirection || 'asc',
     sortField = queryParams.sortField || 'createdAt',
@@ -544,6 +550,32 @@ const forgotPasswordReset = async (req, res, next) => {
   // });
 };
 module.exports.forgotPasswordReset = forgotPasswordReset;
+
+const toggleUserBlock = async (req, res) => {
+    let err, user, block, userId;
+    userId = req.params['id'];
+    if (!userId) return ReE(res, 'User Id is required');
+    userId = decodeHash(userId);
+    blockFlag = req.body.block;
+    blockFlag = blockFlag ? JSON.parse(blockFlag) : blockFlag;
+    
+    [err, user] = await to(
+        User.update({
+            blockFlag
+        }, {
+            where: {
+                id: userId
+            }
+        }).then(() => {
+            return User.findById(userId);
+        })
+    );
+    if(err) return ReE(res, err, 422);
+    user = hashColumns(['id'], user);
+    user = filterFieldsFn(user);
+    return ReS(res, {user});
+}
+module.exports.toggleUserBlock = toggleUserBlock;
 
 const update = async function(req, res){
     let err, user, data

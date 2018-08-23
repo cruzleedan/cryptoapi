@@ -2,6 +2,7 @@ const EntityController = require('../controllers/entity/entity.controller');
 const ReviewController = require('../controllers/review/review.controller');
 const VoteController = require('../controllers/vote/vote.controller');
 const { permit } = require('../middleware/permission');
+const { userBlock } = require('../middleware/block');
 const {Review} = require('../models');
 const { check } = require('express-validator/check');
 const { validate, validateImageFile } = require('../middleware/validation');
@@ -13,6 +14,7 @@ module.exports = (router, passport) => {
 	router.put('/entities/new',
 		passport.authenticate('jwt', {session:false}), 
 		validateImageFile('image'),
+		userBlock,
 		EntityController.postNewEntity
 	);
 
@@ -22,8 +24,8 @@ module.exports = (router, passport) => {
 		],
 		validate,
 		passport.authenticate('jwt', {session:false}),
+		// permit admin or entity creator
 		permit('admin', async (req, res, next) => {
-			console.log('------------------------- START --------------------------');
 			const user = req.user;
 			const id = req.params['id'];
 			let entity,err;
@@ -31,7 +33,6 @@ module.exports = (router, passport) => {
 			if(err) return false;
 			if(!entity) return false;
 			if(user.hasEntity(entity)) {
-				console.log('------------------------- END --------------------------');
 				next();
 			}
 			return false;
@@ -45,8 +46,8 @@ module.exports = (router, passport) => {
 		],
 		validate,
 		passport.authenticate('jwt', {session:false}),
+		// permit admin or entity creator
 		permit('admin', async (req, res, next) => {
-			console.log('------------------------- START --------------------------');
 			const user = req.user;
 			const id = req.params['id'];
 			let entity,err;
@@ -54,7 +55,6 @@ module.exports = (router, passport) => {
 			if(err) return false;
 			if(!entity) return false;
 			if(user.hasEntity(entity)) {
-				console.log('------------------------- END --------------------------');
 				next();
 			}
 			return false;

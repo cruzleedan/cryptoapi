@@ -5,7 +5,6 @@ const permit = (...allowed) => {
 		const isAllowed = (userRoles) => { 
 			return allowed.some(allowedRole => {
 				if(typeof allowedRole === 'function') {
-					console.log('----------------------------------- EXECUTE FUNCTION ---------------------------------------');
 					return allowedRole(req, res, next);
 				}
 				return userRoles.includes(allowedRole);
