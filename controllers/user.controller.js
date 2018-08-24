@@ -67,6 +67,9 @@ const create = async function(req, res){
     const body = req.body;
     let avatar = res.req && res.req.file && res.req.file.filename ? res.req.file : '';
     let matchedPassword = body.matchedPassword ? JSON.parse(body.matchedPassword) : {};
+    if(!Object.keys(matchedPassword).length && body.hasOwnProperty('password') && body.password) {
+        matchedPassword.new = body.password;
+    }
     if(avatar) {
         body['avatar'] = avatar.filename;
     }
