@@ -706,26 +706,46 @@ const remove = async function(req, res){
 module.exports.remove = remove;
 
 
+const getUserInfo = function(req, res, user) {
+    let err, reviewCount, entitiesCount;
+    [err, reviewsCount] = await to(
+        Review.count({
+            where: {
+                userId: user.id
+            },
+            paranoid: true
+        })
+    );
+    [err, entitiesCount] = await to(
+        Entity.count({
+            where: {
+                userId: user.id
+            },
+            paranoid: true
+        })
+    );
+    if(err) return ReE(res, err, 422);
+    const token = user.getJWT();
+    user = hashColumns(['id'], user);
+    user.reviewsCount = reviewsCount;
+    user.entitiesCount = entitiesCount;
+    user.roles = user.roles && user.roles instanceof Array ? user.roles : JSON.parse(user.roles || "[]");
+    user = filterFieldsFn(user);
+    return ReS(res, {token, user})
+}
+
 const login = async function(req, res){
     const body = req.body;
     let err, user;
     [err, user] = await to(authService.authUser(body));
     if(err) return ReE(res, err, 422);
-    const token = user.getJWT();
-    user = hashColumns(['id'], user);
-    user.roles = user.roles && user.roles instanceof Array ? user.roles : JSON.parse(user.roles || "[]");
-    user = filterFieldsFn(user);
-    return ReS(res, {token, user});
+    return getUserInfo(req, res, user);
 }
 module.exports.login = login;
 
 const fbLogin = async function(req, res){
     let user = req.user;
     if(!user) return ReE(res, 'User not found', 422);
-    const token = user.getJWT();
-    user = hashColumns(['id'], user);
-    user.roles = user.roles && user.roles instanceof Array ? user.roles : JSON.parse(user.roles || "[]");
-    user = filterFieldsFn(user);
-    return ReS(res, {token, user});
+    return getUserInfo(req, res, user);
 }
 module.exports.fbLogin = fbLogin;
