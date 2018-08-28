@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Welcome</title>
+    <style type="text/css">
+	    @font-face{
+	        font-family:'Open Sans';
+	        font-style:normal;
+	        font-weight:400;
+	        src:local('Open Sans'),
+	            local('OpenSans'),
+	            url('http://fonts.gstatic.com/s/opensans/v10/cJZKeOuBrn4kERxqtaUH3bO3LdcAZYWl9Si6vvxL-qU.woff') format('woff');
+	    }
+	    body{
+	        font-family:'Open Sans', 'Helvetica Neue', Helvetica, sans-serif;
+	        max-width: 700px;
+	    }
+	    span {
+	    	font-size: 12px;
+	    }
+	    .main-container {
+	    	background-color: #f3f3f3;
+	    	padding: 10px;
+	    }
+	    .title {
+	    	font-weight: bold;
+	    }
+	    .full-width {
+	    	width: 100%;
+	    }
+	    .logo-cont {
+	    	width: 100%; text-align: center;
+	    }
+	    .review-btn {
+	    	text-decoration: none;
+		    font-size: 14px;
+		    background-color: #007cc6;
+		    color: #fff;
+		    padding: 6px;
+		    border-radius: 3px;
+		    font-weight: 400;
+	    }
+	    .footer {
+	    	color: grey;
+	    	font-size: 10px;
+	    }
+	</style>
+</head>
+
+<body>
+	<table class="full-width main-container">
+		<thead class="full-width">
+			<tr>
+				<td class="logo-cont">
+					<img width="50" height="50" src="cid:logo"/>
+				</td>
+			</tr>
+			<tr>
+				<td><br></td>
+			</tr>
+		</thead>
+		<tbody class="full-width">
+			<tr>
+				<td class="full-width">
+					<table class="full-width"> 
+						<tr class="full-width">
+							<td>
+								<span>Welcome to <span class="title">Cryptocaution</span> {{name}}.</span>
+							</td>
+						</tr>
+						<tr class="full-width">
+							<td>
+								<span>Your experiences with cryptocurrencies matters. Click the button below to share your experiences.</span>
+							</td>
+						</tr>
+						<tr><td><br></td></tr>
+						<tr>
+							<td>
+								<a class="review-btn" href="{{domain}}">Review Now</a>
+							</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+			<tr>
+				<td class="full-width">
+					<hr>
+				</td>
+			</tr>
+			<tr>
+				<td class="full-width">
+					<table class="footer">
+						<tr>
+							<td>
+								<a href="{{domain}}">Go To Cryptocaution</a> |
+							</td>
+							<td>
+								<a href="{{domain}}">Contact Us</a>
+							</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+			<tr>
+				<td class="full-width">
+					<span class="footer">This is an auto-generated email, which you cannot reply to. To get in touch, please click Contact us.</span>
+				</td>
+			</tr>
+		</tbody>
+	</table>
+   
+</body>	
+
+</html>
