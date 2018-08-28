@@ -129,7 +129,10 @@ module.exports = (router, passport) => {
 				if(err) {
 					return ReE(res, err.error, 422);
 				}
-				if(user) return next();
+				if(user) {
+					req.user = user;
+					return next(user);
+				};
 				return ReE(res, 'Failed to register user, please try again later.', 422);
 			})(req, res, next);
 		}, 
