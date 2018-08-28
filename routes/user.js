@@ -131,7 +131,7 @@ module.exports = (router, passport) => {
 				}
 				if(user) {
 					req.user = user;
-					return next(user);
+					return next();
 				};
 				return ReE(res, 'Failed to register user, please try again later.', 422);
 			})(req, res, next);
