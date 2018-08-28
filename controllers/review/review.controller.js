@@ -2,6 +2,7 @@ const { Review, User, Entity, sequelize, Sequelize } = require('../../models');
 const Op = Sequelize.Op;
 const { to, ReE, ReS }  = require('../../services/util.service');
 const { hashColumns, decodeHash }  = require('../../services/hash.service');
+const {filterFn} = require('../../helpers/filter.helper');
 const { updateReviewRtng } = require('../../helpers/review.helper');
 const updateReview = async (req, res) => {
     // const userId = req.user.id,
@@ -74,8 +75,48 @@ const postNewReview = async (req, res) => {
 module.exports.postNewReview = postNewReview;
 
 const getReviews = async (req, res) => {
+    let err, reviews;
+    const queryParams = req.query;
+    
+    let filter = tryParseJSON(queryParams.filter);
+    filter = filter ? filter : queryParams.filter;
+    const filterField = queryParams.filterField || 'user_id',
+    sortDirection = queryParams.sortDirection || 'asc',
+    sortField = queryParams.sortField || 'createdAt',
+    pageNumber = parseInt(queryParams.pageNumber),
+    pageSize = parseInt(queryParams.pageSize) || 10,
+    initialPos = isNaN(pageNumber) ? 0 : pageNumber * pageSize,
+    finalPos = initialPos + pageSize;
+    filterFields = [];
 
-}
+    const config = {
+        attributes: {
+            exclude: ['create_time', 'delete_time', 'update_time', 'user_id', 'entity_id'],
+        },
+        include: [{
+            model: User,
+            attributes: {
+                include: [
+                    [sequelize.literal('(SELECT COUNT(*) FROM `review` sr WHERE sr.user_id = Review.user_id)'), 'reviewCount']
+                ],
+                exclude: ['roles', 'createdAt', 'updatedAt', 'deletedAt', 'create_time', 'update_time', 'delete_time', 'password', 'AcceptedTermsFlag', 'desc', 'facebookId', 'firstname', 'lastname', 'gender', 'authMethod', 'blockFlag']
+            }
+        }],
+        order: [[sortField, sortDirection]],
+        offset: initialPos,
+        limit: finalPos,
+        paranoid: true
+    };
+    
+    return filterFn(res, {
+        config,
+        filter,
+        filterFields,
+        model: Review,
+        count: true,
+        hashColumns: ['id', 'userId', {'User': ['id']}]
+    });
+};
 module.exports.getReviews = getReviews;
 
 const getReviewById = async(req, res) => {
