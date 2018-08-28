@@ -706,7 +706,7 @@ const remove = async function(req, res){
 module.exports.remove = remove;
 
 
-const getUserInfo = function(req, res, user) {
+const getUserInfo = async function(req, res, user) {
     let err, reviewCount, entitiesCount;
     [err, reviewsCount] = await to(
         Review.count({
