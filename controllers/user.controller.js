@@ -66,10 +66,8 @@ module.exports.forgotPassword = forgotPassword;
 const create = async function(req, res){
     const body = req.body;
     let avatar = res.req && res.req.file && res.req.file.filename ? res.req.file : '';
-    let matchedPassword = body.matchedPassword ? JSON.parse(body.matchedPassword) : {};
-    if(!Object.keys(matchedPassword).length && body.hasOwnProperty('password') && body.password) {
-        matchedPassword.new = body.password;
-    }
+    let matchedPassword = body.matchedPassword ? JSON.parse(JSON.stringify(body.matchedPassword)) : {};
+    
     if(avatar) {
         body['avatar'] = avatar.filename;
     }
@@ -105,7 +103,30 @@ const create = async function(req, res){
         const token = user.getJWT();
         user = hashColumns(['id'], user);
         user = filterFieldsFn(user);
-        return ReS(res, {message:'Successfully created new user.', user, token}, 201);
+
+        var data = {
+            to: user.email,
+            from: CONFIG.mailer_user,
+            template: 'welcome-email',
+            subject: 'Welcome to Cryptocaution',
+            context: {
+                name: user.username || user.firstname,
+                domain: CONFIG.frontend_domain
+            },
+            attachments: [{
+                filename: 'dark-logo.png',
+                path: './assets/logos',
+                cid: 'logo' //same cid value as in the html img src
+            }]
+        };
+        if(!data.to) return ReE(res, 'Email not found', 422);
+        smtpTransport.sendMail(data, function(err) {
+            if (!err) {
+                return ReS(res, {message:'Successfully created new user.', user, token}, 201);
+            } else {
+                return ReS(res, {message:'Successfully created new user.', user, token, error: err}, 201);
+            }
+        });
     }
 }
 module.exports.create = create;
@@ -699,8 +720,8 @@ const login = async function(req, res){
 module.exports.login = login;
 
 const fbLogin = async function(req, res){
-    res.setHeader('Content-Type', 'application/json');
     let user = req.user;
+    if(!user) return ReE(res, 'User not found', 422);
     const token = user.getJWT();
     user = hashColumns(['id'], user);
     user.roles = user.roles && user.roles instanceof Array ? user.roles : JSON.parse(user.roles || "[]");

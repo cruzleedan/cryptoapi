@@ -2,6 +2,7 @@ const UserController 	= require('../controllers/user.controller');
 const { permit } = require('../middleware/permission');
 const { validate, validateImageFile } = require('../middleware/validation');
 const { check } = require('express-validator/check');
+const { ReE } = require('../services/util.service');
 module.exports = (router, passport) => {
 	router.get('/user', passport.authenticate('jwt', {session: false}), UserController.get);
 	router.get('/users',
@@ -118,6 +119,21 @@ module.exports = (router, passport) => {
 		validate,
 		UserController.forgotPasswordReset
 	);
-	router.post('/users/facebook/token', passport.authenticate('facebook-token', {session: false}), UserController.fbLogin);
+	router.post('/users/facebook/token',
+		[
+			check('access_token').not().isEmpty().withMessage('Access Token missing')
+		],
+		validate,
+		function(req, res, next) {
+			passport.authenticate('facebook-token', {session: false}, function(err, user) {
+				if(err) {
+					return ReE(res, err.error, 422);
+				}
+				if(user) return next();
+				return ReE(res, 'Failed to register user, please try again later.', 422);
+			})(req, res, next);
+		}, 
+		UserController.fbLogin
+	);
 	router.delete('/users', passport.authenticate('jwt', {session:false}), UserController.remove);
 }
