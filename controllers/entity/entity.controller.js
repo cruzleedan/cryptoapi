@@ -164,7 +164,7 @@ const getEntityById = async (req, res) => {
             },
             include: [{
                 model: User,
-                attributes: ['username']
+                attributes: ['id', 'username']
             }, {
                 model: Category, 
                 attributes: ['category', 'id']
@@ -203,7 +203,7 @@ const getEntityById = async (req, res) => {
                 break;
         }
     }
-    entity = hashColumns(['id', 'categoryId', 'userId', {'Category': ['id']}], entity);
+    entity = hashColumns(['id', 'categoryId', 'userId', {'Category': ['id']}, {'User': ['id']}], entity);
     entity.excellentRating = excellentRating;
     entity.greatRating = greatRating;
     entity.averageRating = averageRating;

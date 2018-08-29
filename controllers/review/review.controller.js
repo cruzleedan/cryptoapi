@@ -120,15 +120,21 @@ const getReviews = async (req, res) => {
 module.exports.getReviews = getReviews;
 
 const getReviewById = async(req, res) => {
-    const reviewId = req.params['id'];
+    let reviewId = req.params['id'];
+    reviewId = decodeHash(reviewId);
     let review, err;
     [err, review] = await to(
     	Review.findById(reviewId, {
     		include: [
     			{
-    				model: User, 
-    				required: true,
-    				attributes: ['username', 'email', 'score', 'avatar']
+    				model: User,
+                    required: true,
+                    attributes: {
+                        include: [
+                            [sequelize.literal('(SELECT COUNT(*) FROM `review` sr WHERE sr.user_id = Review.user_id AND sr.delete_time IS NULL)'), 'reviewCount']
+                        ],
+                        exclude: ['roles', 'createdAt', 'updatedAt', 'deletedAt', 'create_time', 'update_time', 'delete_time', 'password', 'AcceptedTermsFlag', 'desc', 'facebookId', 'firstname', 'lastname', 'gender', 'authMethod', 'blockFlag']
+                    }
     			},
     			{
     				model: Entity,
@@ -142,7 +148,8 @@ const getReviewById = async(req, res) => {
     	})
     );
     if(err) return ReE(res, err, 422);
-    review = hashColumns(['id', 'entityId', 'userId', {'Entity': ['id']}], review);
+    if(!review) return ReE(res, 'Review not found', 422);
+    review = hashColumns(['id', 'entityId', 'userId', {'Entity': ['id']}, {'User': ['id']}], review);
     return ReS(res, {data: review}, 200);
 }
 module.exports.getReviewById = getReviewById;
