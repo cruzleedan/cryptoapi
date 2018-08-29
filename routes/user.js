@@ -59,6 +59,15 @@ module.exports = (router, passport) => {
 		passport.authenticate('jwt', {session: false}),
 		UserController.deleteUserEntity
 	);
+	router.delete('/user/:id', 
+		[
+			check('id').not().isEmpty().withMessage('ID is required'),
+		],
+		validate,
+		passport.authenticate('jwt', {session: false}), 
+		permit('admin'), 
+		UserController.deleteUser
+	);
 	router.delete('/user/review/:id', 
 		[
 			check('id').not().isEmpty().withMessage('Review ID is required'),

@@ -431,6 +431,7 @@ const deleteUserEntity = async (req, res) => {
         return entity.destroy()
     })
     .then(entity => {
+        entity = hashColumns(['id'], entity);
         return ReS(res, {data: entity}, 200); 
     })
     .catch(err => {
@@ -438,6 +439,28 @@ const deleteUserEntity = async (req, res) => {
     });
 }
 module.exports.deleteUserEntity = deleteUserEntity;
+
+const deleteUser = async (req, res) => {
+    let userId = req.params['id'],
+    user, err;
+    userId = decodeHash(userId);
+    [err, user] = await to(
+        User.findById(userId)
+    );
+    if(err) return ReE(res, err, 422);
+    if(!user) return ReE(res, 'User not found', 422);
+    return sequelize.transaction(transaction => {
+        return user.destroy();
+    })
+    .then(user => {
+        user = hashColumns(['id'], user);
+        return ReS(res, {data: user}, 200);
+    })
+    .catch(err => {
+        return ReE(res, err, 422);
+    });
+}
+module.exports.deleteUser = deleteUser;
 
 const deleteUserReview = async (req, res) => {
     let user = req.user, 
