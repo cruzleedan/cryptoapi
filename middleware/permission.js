@@ -15,7 +15,7 @@ const permit = (...allowed) => {
 			next(); // role is allowed, so continue on the next middleware	
 		}
 		else {
-			response.status(403).json({message: "Forbidden"}); // user is forbidden
+			return res.status(403).json({message: "Forbidden"}); // user is forbidden
 		}
 	}
 }

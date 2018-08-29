@@ -254,7 +254,32 @@ const checkUsernameNotTaken = async (req, res) => {
     return ReS(res, {data: !!(user)}, 200);
 }
 module.exports.checkUsernameNotTaken = checkUsernameNotTaken;
-
+const getUserDetails = async function(req, res, user) {
+    let err, reviewCount, entitiesCount;
+    [err, reviewsCount] = await to(
+        Review.count({
+            where: {
+                userId: user.id
+            },
+            paranoid: true
+        })
+    );
+    [err, entitiesCount] = await to(
+        Entity.count({
+            where: {
+                userId: user.id
+            },
+            paranoid: true
+        })
+    );
+    if(err) return ReE(res, err, 422);
+    user = hashColumns(['id'], user);
+    user.reviewsCount = reviewsCount;
+    user.entitiesCount = entitiesCount;
+    user.roles = user.roles && user.roles instanceof Array ? user.roles : JSON.parse(user.roles || "[]");
+    user = filterFieldsFn(user);
+    return ReS(res, {data: user});
+}
 const get = async function(req, res){
     res.setHeader('Content-Type', 'application/json');
     let user = req.user;
@@ -294,10 +319,8 @@ const findUserById = async (req, res) => {
         User.findById(id)
     );
     if(err) return ReE(res, err, 422);
-    user = hashColumns(['id'], user);
-    user.roles = user.roles && user.roles instanceof Array ? user.roles : JSON.parse(user.roles || "[]");
-    user = filterFieldsFn(user);
-    return ReS(res, {data: user});
+
+    return getUserDetails(req, res, user);
 }
 module.exports.findUserById = findUserById;
 
@@ -340,7 +363,7 @@ module.exports.getUsers = getUsers;
 const getUserEntities = async (req, res) => {
     let err, reviews;
     const queryParams = req.query,
-    userId = req.user.id,
+    userId = queryParams.userId ? decodeHash(queryParams.userId) : req.user.id;
     filter = queryParams.filter,
     sortDirection = queryParams.sortDirection || 'asc',
     sortField = queryParams.sortField || 'createdAt',
@@ -376,7 +399,7 @@ module.exports.getUserEntities = getUserEntities;
 const getUserReviews = async (req, res) => {
     let err, reviews;
     const queryParams = req.query,
-    userId = req.user.id,
+    userId = queryParams.userId ? decodeHash(queryParams.userId) : req.user.id;
     filter = queryParams.filter,
     sortDirection = queryParams.sortDirection || 'asc',
     sortField = queryParams.sortField || 'createdAt',
@@ -454,6 +477,7 @@ const deleteUser = async (req, res) => {
     })
     .then(user => {
         user = hashColumns(['id'], user);
+        user = filterFieldsFn(user);
         return ReS(res, {data: user}, 200);
     })
     .catch(err => {

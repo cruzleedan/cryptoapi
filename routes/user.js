@@ -21,7 +21,6 @@ module.exports = (router, passport) => {
 		],
 		validate,
 		passport.authenticate('jwt', {session: false}), 
-		permit('admin'), 
 		UserController.findUserById
 	);
 	router.get('/user/entities', 
