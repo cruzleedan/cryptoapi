@@ -10,6 +10,11 @@ const decodeHash = (column) => {
 }
 module.exports.decodeHash = decodeHash;
 
+const hash = (param) => {
+    return hashids.encode(param);
+}
+module.exports.hash = hash;
+
 const hashColumns = (columns, rows) => {
 	rows = JSON.parse(JSON.stringify(rows));
     if(rows instanceof Array) {

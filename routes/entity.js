@@ -18,12 +18,20 @@ module.exports = (router, passport) => {
 		EntityController.postNewEntity
 	);
 
+	router.post('/entities/new/image',
+		// passport.authenticate('jwt', {session:false}), 
+		validateImageFile('file'),
+		// userBlock,
+		EntityController.postEntityImage
+	);
+
 	router.put('/entities/:id/edit',
 		[
 			check('id').not().isEmpty().withMessage('Entity ID is required.')
 		],
 		validate,
 		passport.authenticate('jwt', {session:false}),
+		validateImageFile('image'),
 		// permit admin or entity creator
 		permit('admin', async (req, res, next) => {
 			const user = req.user;
