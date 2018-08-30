@@ -60,7 +60,7 @@ const postNewEntity = async (req, res) => {
                 fs.mkdirSync(dir);
             }
             fs.rename(image.path, `${dir}/${image.filename}`, (err) => {
-                if (err) throw err;
+                // if (err) throw err;
                 console.log('Rename complete!');
             });
         }
@@ -75,7 +75,7 @@ const postNewEntity = async (req, res) => {
                 const imgLoc = `./tmp/uploads/${filename}`;
                 if(fs.existsSync(imgLoc)) {
                     fs.rename(imgLoc, `${dir}/${filename}`, (err) => {
-                        if (err) throw err;
+                        // if (err) throw err;
                         console.log('Rename complete!');
                     });
                 }
@@ -111,15 +111,18 @@ const postNewEntity = async (req, res) => {
 }
 module.exports.postNewEntity = postNewEntity;
 
-const deleteImgFiles = (id, exceptArr) => {
+const deleteImgFiles = (res, id, exceptArr) => {
     const directory = path.join(__dirname, './../../public/images/entities/'+id);
+    if (!fs.existsSync(directory)){
+        fs.mkdirSync(directory);
+    }
     fs.readdir(directory, (err, files) => {
-        if (err) throw err;
+        // if (err) throw err;
 
         for (const file of files) {
             if(!exceptArr.includes(file)) {
                 fs.unlink(path.join(directory, file), err => {
-                    if (err) throw err;
+                    // return ReE(res, err, 422);
                 });
             }
         }
@@ -150,7 +153,7 @@ const updateEntity = async (req, res) => {
     let descImages = req.body['descImages'];
     descImages = JSON.parse(descImages);
     console.log('DESC IMAGES', descImages);
-    deleteImgFiles(entity.id, [...descImages, image, entity.image]);
+    deleteImgFiles(res, entity.id, [...descImages, image, entity.image]);
 
     /*------------------------------ START ------------------------------
     | Transfer Description images to entities folder
@@ -163,7 +166,7 @@ const updateEntity = async (req, res) => {
             const imgLoc = `./tmp/uploads/${filename}`;
             if(fs.existsSync(imgLoc)) {
                 fs.rename(imgLoc, `${dir}/${filename}`, (err) => {
-                    if (err) throw err;
+                    // if (err) throw err;
                     console.log('Rename complete!');
                 });
             }
@@ -193,7 +196,7 @@ const updateEntity = async (req, res) => {
                 fs.mkdirSync(dir);
             }
             fs.rename(image.path, `${dir}/${image.filename}`, (err) => {
-                if (err) throw err;
+                // if (err) throw err;
                 console.log('Rename complete!');
             });
         }
