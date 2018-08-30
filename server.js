@@ -36,8 +36,19 @@ models.sequelize.authenticate().then(() => {
 if(CONFIG.app === 'dev') {
     // app.use(function(req,res,next){setTimeout(next,3000)});
 }
+app.use('/static/tmp',express.static(path.join(__dirname, 'tmp/uploads')));
 app.use('/static/avatar',express.static(path.join(__dirname, 'public/images/avatars')));
 app.use('/static/entity',express.static(path.join(__dirname, 'public/images/entities')));
+app.use(
+    '/tmp/:filename',
+    (req, res, next) => {
+        if(req.params['filename']){
+            const filename = req.params['filename'];
+            return res.redirect(`/static/tmp/${filename}`);
+        }
+        return next();
+    }
+);
 app.use(
     '/avatar/:id/:filename',
     (req, res, next) => {

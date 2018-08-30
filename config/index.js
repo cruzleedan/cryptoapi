@@ -25,6 +25,7 @@ CONFIG.mailer_pass = process.env.MAILER_PASS || 'crypt0cauti*n';
 
 
 if (CONFIG.app === 'dev') {
+    CONFIG.domain = process.env.DOMAIN || 'http://localhost:3000';
 	CONFIG.frontend_domain = process.env.FRONTEND_DOMAIN || `https://localhost:4200`;
     CONFIG.google_client_id = process.env.GOOGLE_CLIENT_ID || '';
     CONFIG.google_client_secret = process.env.GOOGLE_CLIENT_SECRET || 'cryptocaution_authentication';
@@ -32,6 +33,7 @@ if (CONFIG.app === 'dev') {
     CONFIG.fb_client_secret = process.env.FB_CLIENT_SECRET || 'adfb63b8b8576aa8b0b370e342e43c96';
 
 } else if(CONFIG.app === 'prod') {
+    CONFIG.domain = process.env.DOMAIN || 'https://cryptocautionapi.herokuapp.com';
 	CONFIG.frontend_domain = process.env.FRONTEND_DOMAIN || '';
     CONFIG.google_client_id = process.env.GOOGLE_CLIENT_ID || '';
     CONFIG.google_client_secret = process.env.GOOGLE_CLIENT_SECRET || 'cryptocaution_authentication';
