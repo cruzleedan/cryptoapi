@@ -22,7 +22,7 @@ const filterFieldsFn = (user, fields) => {
     }, {})
 };
 const forgotPassword = async (req, res) => {
-    const username = req.query['username'];
+    const username = req.body['username'];
     let user, err;
     if(!username) return ReE(res, 'username is required', 422);
     [err, user] = await to(
@@ -34,6 +34,7 @@ const forgotPassword = async (req, res) => {
         })
     );
     if(err) return ReE(res, err, 422);
+
     if(!user) return ReE(res, 'User not found', 422);
 
     const resetPasswordToken = crypto.randomBytes(30).toString('hex');
