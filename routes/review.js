@@ -1,4 +1,4 @@
-const ReviewController = require('../controllers/review/review.controller');
+const ReviewController = require('../controllers/review.controller');
 const { permit } = require('../middleware/permission');
 const { validate, validateImageFile } = require('../middleware/validation');
 const { check } = require('express-validator/check');

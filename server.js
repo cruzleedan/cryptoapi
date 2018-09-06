@@ -1,17 +1,23 @@
 const express = require('express');
-const logger = require('morgan');
+const morgan = require('morgan');
 const cors = require('cors');
 const path = require('path');
 const bodyParser = require('body-parser');
 const passport = require('passport');
 const pe = require('parse-error');
+const fs = require('fs');
+const debug = require('debug');
 
 const CONFIG = require('./config');
 const v1 = require('./routes/v1');
 const app = express();
 
+// log all requests to access.log
+app.use(morgan('common', {
+    stream: fs.createWriteStream(path.join(path.resolve(`${__dirname}/logs`), 'access.log'), {flags: 'a'})
+}));
+
 app.use(cors());
-app.use(logger('dev'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({
     extended: true
@@ -22,12 +28,12 @@ app.use(passport.initialize());
 const { decodeHash }  = require('./services/hash.service');
 
 //Log Env
-console.log("Environment:", CONFIG.app);
+debug("Environment:", CONFIG.app);
 
 //DATABASE
 const models = require("./models");
 models.sequelize.authenticate().then(() => {
-        console.log('Connected to SQL database:', CONFIG.db_name);
+        debug('Connected to SQL database:', CONFIG.db_name);
     })
     .catch(err => {
         console.error('Unable to connect to SQL database:', CONFIG.db_name, err);

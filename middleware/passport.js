@@ -1,4 +1,6 @@
 const { ExtractJwt, Strategy } = require('passport-jwt');
+const AnonymousStrategy = require('passport-anonymous').Strategy;
+const BasicStrategy = require('passport-http').BasicStrategy;
 const FacebookTokenStrategy = require('passport-facebook-token');
 const { User, Sequelize } = require('../models');
 const Op = Sequelize.Op;
@@ -22,7 +24,6 @@ module.exports = function(passport){
             return done(null, false);
         }
     }));
-
 
     passport.use(new FacebookTokenStrategy({
             clientID: CONFIG.fb_client_id,
@@ -66,6 +67,25 @@ module.exports = function(passport){
             }
         })
     );
+
+
+    // Use the BasicStrategy within Passport.
+    //   Strategies in Passport require a `verify` function, which accept
+    //   credentials (in this case, a username and password), and invoke a callback
+    //   with a user object.
+    // passport.use(new BasicStrategy(opts, async (jwt_payload, done) => {
+    //     let err, user;
+    //     console.log('JWT PAYLOAD', jwt_payload);
+    //     [err, user] = await to(User.findOne({ where: {id: jwt_payload.user_id}}));
+
+    //     if(err) return done(err, false);
+    //     if(user) {
+    //         return done(null, user);
+    //     }else{
+    //         return done(null, false);
+    //     }
+    // }));
+    passport.use(new AnonymousStrategy());
 }
 
 

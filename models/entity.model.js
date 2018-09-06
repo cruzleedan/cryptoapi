@@ -54,6 +54,11 @@ module.exports = (sequelize, DataTypes) => {
         email: {
             type: DataTypes.STRING
         },
+        approved: {
+            field: 'approved_flag',
+            type: DataTypes.BOOLEAN,
+            defaultValue: 0
+        },
         deletedAt: {
             field: 'delete_time',
             type: DataTypes.DATE

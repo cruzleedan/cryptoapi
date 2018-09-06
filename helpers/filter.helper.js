@@ -73,7 +73,7 @@ const parseFieldsToJSON = (fields, rows) => {
  * @param  {Object}
  * @return {Object}
  */
-const filterFn = (res, param) => {
+const filterFn = (res, param, opts={}) => {
     if(!param.hasOwnProperty('filter') || !param.hasOwnProperty('model')) return ReE(res, 'Filter is required', 422);
     let cfg = {};
     const filter = param.filter,
@@ -178,7 +178,7 @@ const filterFn = (res, param) => {
             console.log('1. result rows');
             result.rows = parseFieldsToJSON(parseToJSON, result.rows);
             console.log('2. result rows');
-            return ReS(res, {data: result.rows, count: result.count}, 200);
+            return ReS(res, Object.assign(opts, {data: result.rows, count: result.count}), 200);
         }).catch(err => {
             return ReE(res, err, 422);
         });
@@ -188,7 +188,7 @@ const filterFn = (res, param) => {
         .then(result => {
             result = hashColumnsFn(hashColumns, result);
             result = parseFieldsToJSON(parseToJSON, result);
-            return ReS(res, {data: result}, 200);
+            return ReS(res, Object.assign(opts, {data: result}), 200);
         }).catch(err => {
             return ReE(res, err, 422);
         });

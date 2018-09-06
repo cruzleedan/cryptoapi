@@ -1,6 +1,6 @@
-const EntityController = require('../controllers/entity/entity.controller');
-const ReviewController = require('../controllers/review/review.controller');
-const VoteController = require('../controllers/vote/vote.controller');
+const EntityController = require('../controllers/entity.controller');
+const ReviewController = require('../controllers/review.controller');
+const VoteController = require('../controllers/vote.controller');
 const { permit } = require('../middleware/permission');
 const { userBlock } = require('../middleware/block');
 const {Review} = require('../models');
@@ -8,8 +8,14 @@ const { check } = require('express-validator/check');
 const { validate, validateImageFile } = require('../middleware/validation');
 const { to, ReE, ReS }  = require('../services/util.service');
 const { Entity } = require('../models');
+
 module.exports = (router, passport) => {
-	router.get('/entities', EntityController.getEntities);
+	router.get('/entities',
+		// Authenticate using HTTP Basic credentials, with session support disabled,
+		// and allow anonymous requests.
+		passport.authenticate(['jwt', 'anonymous'], { session: false }),
+		EntityController.getEntities
+	);
 
 	router.put('/entities/new',
 		passport.authenticate('jwt', {session:false}), 
@@ -81,7 +87,15 @@ module.exports = (router, passport) => {
 	);
 
 	router.get('/entities/:id', EntityController.getEntityById);
-
+	router.post('/entities/:id/approved', 
+		[
+			check('id').not().isEmpty().withMessage('Entity ID is required.')
+		],
+		validate,
+		passport.authenticate('jwt', {session: false}),
+		permit('admin'),
+		EntityController.approveEntity
+	);
 	router.put('/entities/:id/reviews/new',
 		[
 			check('id').not().isEmpty().withMessage('Entity ID is required'),

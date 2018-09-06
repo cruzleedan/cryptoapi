@@ -1,3 +1,4 @@
+const debug = require('debug');
 const { Sequelize, sequelize, User, Review, Entity } = require('../models');
 const Op = Sequelize.Op;
 const multer = require('multer');
@@ -89,7 +90,7 @@ const create = async function(req, res){
         [err, user] = await to(authService.createUser(body, res));
         
         if(err) return ReE(res, err, 422);
-        console.log('USER', user);
+        debug('USER', user);
         if(user && avatar && fs.existsSync(avatar.path)){
             const dir = `./public/images/avatars/${user.id}`
             if (!fs.existsSync(dir)){
@@ -97,7 +98,7 @@ const create = async function(req, res){
             }
             fs.rename(avatar.path, `${dir}/${avatar.filename}`, (err) => {
                 if (err) throw err;
-                console.log('Rename complete!');
+                debug('Rename complete!');
             });
         }
 
@@ -136,11 +137,11 @@ const createUserProfile = async function(req, res){
     if(fs.existsSync(avatar.path)){
         fs.rename(avatar.path, `./public/images/avatars/${avatar.filename}`, (err) => {
             if (err) throw err;
-            console.log('Rename complete!');
+            debug('Rename complete!');
         });
     }
     const body = req.body;
-    console.log(res.req.file);
+    debug(res.req.file);
     return ReS(res, {body, 'file': res.req.file});
     // if(!body.unique_key && !body.email && !body.phone){
     //     return ReE(res, 'Please enter an email or username to register.');
@@ -378,7 +379,7 @@ const getUserEntities = async (req, res) => {
     
     const config = {
         where: {userId},
-        attributes: ['id','name', 'desc', 'rating', 'reviewCount', 'image', 'createdAt'],
+        attributes: ['id','name', 'desc', 'rating', 'reviewCount', 'image', 'createdAt', 'approved'],
         order: [[sortField, sortDirection]],
         offset: initialPos,
         limit: finalPos,

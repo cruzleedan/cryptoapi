@@ -10,8 +10,9 @@ const permit = (...allowed) => {
 				return userRoles.includes(allowedRole);
 			}); 
 		};
-		
-		if (req.user && isAllowed(req.user.roles || [])) {
+		let userRoles = req.user.roles || [];
+		userRoles = typeof userRoles === 'object' && userRoles instanceof Array ? userRoles : [];
+		if (req.user && isAllowed(userRoles)) {
 			next(); // role is allowed, so continue on the next middleware	
 		}
 		else {

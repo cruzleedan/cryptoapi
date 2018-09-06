@@ -1,11 +1,12 @@
+const debug = require('debug');
 const { Sequelize, sequelize, User, Review, Entity } = require('../models');
 const Op = Sequelize.Op;
 const multer = require('multer');
 const path = require('path');
 const { updateReviewRtng } = require('../helpers/review.helper');
 const { filterFn } = require('../helpers/filter.helper');
-const authService       = require('../services/auth.service');
-const { to, ReE, ReS }  = require('../services/util.service');
+const authService = require('../services/auth.service');
+const { to, ReE, ReS } = require('../services/util.service');
 const { hashColumns, decodeHash }  = require('../services/hash.service');
 
 const Dashboard = function(req, res){
@@ -25,25 +26,33 @@ const getEntities = async (req, res) => {
     let err, entities;
     if(!['rating', 'createdAt', 'reviewCount'].includes(field)) return ReE(res, 'Invalid Request');
     const arr = ['id', 'entity_id', 'review', 'createdAt', 'rating', 'upvoteTally', 'downvoteTally'];
+
+
+
+    const config = {
+        where: {
+            approved: true
+        },
+        include: [{
+            model: Review,
+            required: false,
+            attributes: ['id', 'userId', 'entityId', 'title', 'review', 'upvoteTally', 'downvoteTally', 'rating', 'createdAt'],
+            // include: [{
+            //  model: User,
+            //  as: 'ReviewUser',
+            //  attributes: ['id', 'username', 'avatar']
+            // }],
+            separate: true,
+            order: [['rating', 'desc']],
+            limit: 1
+        }],
+        order: [[field, 'desc']],
+        offset: initialPos,
+        limit: finalPos
+    };
+
 	[err, entities] = await to(
-        Entity.findAll({
-        	include: [{
-        		model: Review,
-        		required: false,
-        		attributes: ['id', 'userId', 'entityId', 'title', 'review', 'upvoteTally', 'downvoteTally', 'rating', 'createdAt'],
-        		// include: [{
-        		// 	model: User,
-        		// 	as: 'ReviewUser',
-        		// 	attributes: ['id', 'username', 'avatar']
-        		// }],
-        		separate: true,
-        		order: [['rating', 'desc']],
-        		limit: 1
-        	}],
-        	order: [[field, 'desc']],
-            offset: initialPos,
-            limit: finalPos
-        })
+        Entity.findAll(config)
     );
     if(err) return ReE(res, err, 422);
     if(!entities) return ReE(res, 'Entity not found', 422);
