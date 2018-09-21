@@ -33,7 +33,7 @@ if (CONFIG.app === 'dev') {
     CONFIG.fb_client_secret = process.env.FB_CLIENT_SECRET || 'c051a9b4d84dba4d47f309777b4e71f1';
 
 } else if(CONFIG.app === 'prod') {
-    CONFIG.domain = process.env.DOMAIN || 'https://cryptocautionapi.herokuapp.com';
+    CONFIG.domain = process.env.DOMAIN || 'https://cryptocanary-api.herokuapp.com';
 	CONFIG.frontend_domain = process.env.FRONTEND_DOMAIN || '';
     CONFIG.google_client_id = process.env.GOOGLE_CLIENT_ID || '';
     CONFIG.google_client_secret = process.env.GOOGLE_CLIENT_SECRET || 'cryptocaution_authentication';
