@@ -35,6 +35,12 @@ module.exports = (router, passport) => {
 		passport.authenticate('jwt', {session:false}), 
 		UserController.getUserReviews
 	);
+	router.get('/user/activity', 
+		[],
+		validate,
+		passport.authenticate('jwt', {session:false}), 
+		UserController.getUserActivity
+	);
 	router.get('/user/review/:id', 
 		[
 			check('id').not().isEmpty().withMessage('Review ID is required'),

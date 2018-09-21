@@ -55,7 +55,7 @@ const getCategoriesWithFilter = async (req, res) => {
         paranoid: true
     };
     
-    return filterFn(res, {
+    const data = await filterFn(res, {
         config,
         filter,
         filterFields,
@@ -64,58 +64,11 @@ const getCategoriesWithFilter = async (req, res) => {
         hashColumns: ['id']
     });
 
-    // whereCond = () => {
-    //     let cfg = {};
-
-    //     Object.keys(filter).forEach((filterField) => {
-    //         let fitlerValue = filter[filterField];
-    //         if(!fitlerValue) return;
-    //         let tblAttr = Category.tableAttributes,
-    //             fieldExists = tblAttr.hasOwnProperty(filterField),
-    //             type = fieldExists ? tblAttr[filterField].type.constructor.key: '',
-    //             isString = ['STRING', 'TEXT'].indexOf(type) > -1;
-    //             isNumber = ['INTEGER', 'DECIMAL', 'BIGINT'].indexOf(type) > -1,
-    //             isDate = ['DATE'].indexOf(type) > -1,
-    //             cond = {'STRING': isString, 'NUMBER': isNumber, 'DATE': isDate},
-    //             fieldDT = (()=>{
-    //                 let t;
-    //                 for(key in cond) { 
-    //                     if(cond[key]){
-    //                         t = key;
-    //                         break;
-    //                     }
-    //                 }
-    //                 return t;
-    //             })();
-
-    //         if(fitlerValue && fieldDT == 'STRING') {
-    //             cfg[filterField] = { [Op.like]: `%${fitlerValue}%` };
-    //         } else if(fitlerValue && fieldDT == 'NUMBER') {
-    //             cfg[filterField] = fitlerValue;
-    //         } else if(fitlerValue && fieldDT == 'DATE') {
-    //             let dayBefore = new Date(fitlerValue);
-    //             dayBefore.setDate(dayBefore.getDate() + 1);
-    //             cfg[filterField] = { [Op.between]: [new Date(fitlerValue), dayBefore]};
-    //         }
-    //     })
-        
-    //     return {where: cfg};
-    // };
-
-    // let categories, err;
-    // [err, categories] = await to(
-    //     Category.findAll(Object.assign(whereCond(),{
-    //         offset: initialPos,
-    //         limit: pageSize,
-    //         order: [
-    //             [sortField, sortDirection]
-    //         ]
-    //     }))
-    // );
-    
-    // if(err) return ReE(res, err, 422);
-
-    // return ReS(res, {data: categories, filter: filter}, 200);
+    if(data.success) {
+        return ReS(res, data);
+    } else {
+        return ReE(res, data);
+    }
 };
 module.exports.getCategoriesWithFilter = getCategoriesWithFilter;
 

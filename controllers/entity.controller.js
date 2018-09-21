@@ -37,8 +37,22 @@ const postNewEntity = async (req, res) => {
     res.setHeader('Content-Type', 'application/json');
     if(!req.user) return ReE(res, 'Unauthorized', 422);
 
-    if(validator.isEmpty(req.body.categoryId)) return ReE(res, 'Entity Category is required');
-    req.body.categoryId = decodeHash(req.body.categoryId);
+    if(validator.isEmpty(req.body.categoryId)){
+        let category, err;
+        [err, category] = await to(Category.findOne({
+            attributes: ['id'],
+            where: {
+                category: 'coins'
+            }
+        }));
+        if(err) return ReE(res, err, 422);
+        console.log('CATEGORY ID', category.id);
+        if(!category) return ReE(res, 'CategoryId is required', 422);
+        req.body.categoryId = category.id;
+    } else {
+        req.body.categoryId = decodeHash(req.body.categoryId);
+    }
+
     if(validator.isEmpty(req.body.desc)) return ReE(res, 'Entity Description is required');
     if(validator.isEmpty(req.body.name)) return ReE(res, 'Entity Name is required');
 
@@ -311,7 +325,7 @@ const getEntities = async (req, res) => {
         }
     }
 
-    return filterFn(res, {
+    const data = await filterFn(res, {
         config,
         filter,
         filterFields,
@@ -321,6 +335,11 @@ const getEntities = async (req, res) => {
     }, {
         pending
     });
+    if(data.success) {
+        return ReS(res, data);
+    } else {
+        return ReE(res, data);
+    }
 }
 module.exports.getEntities = getEntities;
 
@@ -328,11 +347,11 @@ const approveEntity = async (req, res) => {
     let entityId = req.params.id;
     entityId = decodeHash(entityId);
     let err, entity, rating,
-    excellentRating = 0,
-    greatRating = 0,
-    averageRating = 0,
-    poorRating = 0,
-    badRating = 0;
+    superShady = 0,
+    veryShady = 0,
+    shady = 0,
+    slightlyShady = 0,
+    notShadyAtAll = 0;
 
     [err, entity] = await to(
         Entity.findOne({
@@ -371,28 +390,28 @@ const approveEntity = async (req, res) => {
         rating = +ratings[i].rating;
         switch(rating){
             case 5:
-                excellentRating++;
+                superShady++;
                 break;
             case 4:
-                greatRating++;
+                veryShady++;
                 break;
             case 3:
-                averageRating++;
+                shady++;
                 break;
             case 2:
-                poorRating++;
+                slightlyShady++;
                 break;
             case 1:
-                badRating++;
+                notShadyAtAll++;
                 break;
         }
     }
     entity = hashColumns(['id', 'categoryId', 'userId', {'Category': ['id']}, {'User': ['id']}], entity);
-    entity.excellentRating = excellentRating;
-    entity.greatRating = greatRating;
-    entity.averageRating = averageRating;
-    entity.poorRating = poorRating;
-    entity.badRating = badRating;
+    entity.superShady = superShady;
+    entity.veryShady = veryShady;
+    entity.shady = shady;
+    entity.slightlyShady = slightlyShady;
+    entity.notShadyAtAll = notShadyAtAll;
     entity.links = entity.links && entity.links instanceof Array ? entity.links : JSON.parse(entity.links || "[]");
     return ReS(res, {data: entity});
 }
@@ -402,11 +421,11 @@ const getEntityById = async (req, res) => {
     let entityId = req.params.id;
     entityId = decodeHash(entityId);
     let err, entity, rating,
-    excellentRating = 0,
-    greatRating = 0,
-    averageRating = 0,
-    poorRating = 0,
-    badRating = 0;
+    superShady = 0,
+    veryShady = 0,
+    shady = 0,
+    slightlyShady = 0,
+    notShadyAtAll = 0;
 
     [err, entity] = await to(
         Entity.findOne({
@@ -439,28 +458,28 @@ const getEntityById = async (req, res) => {
         rating = +ratings[i].rating;
         switch(rating){
             case 5:
-                excellentRating++;
+                superShady++;
                 break;
             case 4:
-                greatRating++;
+                veryShady++;
                 break;
             case 3:
-                averageRating++;
+                shady++;
                 break;
             case 2:
-                poorRating++;
+                slightlyShady++;
                 break;
             case 1:
-                badRating++;
+                notShadyAtAll++;
                 break;
         }
     }
     entity = hashColumns(['id', 'categoryId', 'userId', {'Category': ['id']}, {'User': ['id']}], entity);
-    entity.excellentRating = excellentRating;
-    entity.greatRating = greatRating;
-    entity.averageRating = averageRating;
-    entity.poorRating = poorRating;
-    entity.badRating = badRating;
+    entity.superShady = superShady;
+    entity.veryShady = veryShady;
+    entity.shady = shady;
+    entity.slightlyShady = slightlyShady;
+    entity.notShadyAtAll = notShadyAtAll;
     entity.links = entity.links && entity.links instanceof Array ? entity.links : JSON.parse(entity.links || "[]");
     return ReS(res, {data: entity});
     
@@ -506,7 +525,7 @@ const getReviews = async (req, res) => {
         paranoid: true
     };
     
-    return filterFn(res, {
+    const data = await filterFn(res, {
         config,
         filter,
         filterFields,
@@ -514,58 +533,12 @@ const getReviews = async (req, res) => {
         count: true,
         hashColumns: ['id', 'entityId', 'userId', {'User': ['id']}]
     });
-
-
-
-    // whereCond = () => {
-    //     let cond = [{
-    //         cond:`${ filterField } LIKE ${ '%'+filter+'%' }`,
-    //         value: filter
-    //     }, {
-    //         cond: `entity_id = ${ +entityId }`,
-    //         value: entityId
-    //     }, {
-    //         cond: `r.delete_time IS NULL`,
-    //         value: true
-    //     }]
-    //     .filter((i) => i.value)
-    //     .map((i) => i.cond)
-    //     .join(' AND ');
-    //     return cond.length ? `WHERE ${cond}`: '';
-    // };
-    // // I used raw query instead of sequeliz DAo for where clause but
-    // // you could convert it into DAo to make it dialect agnostic
-    // [err, reviews] = await to(
-    //     sequelize.query(`
-    //             SELECT r.review_id AS id 
-    //                 , r.entity_id AS 'entityId'
-    //                 , r.user_id AS 'userId'
-    //                 , r.review_title AS 'title'
-    //                 , r.review
-    //                 , r.upvote_tally AS 'upvoteTally'
-    //                 , r.downvote_tally AS 'downvoteTally'
-    //                 , r.rating
-    //                 , r.delete_time AS 'deletedAt'
-    //                 , r.create_time AS 'createdAt'
-    //                 , r.update_time AS 'updatedAt'
-    //                 , (SELECT COUNT(*) FROM review sr WHERE sr.user_id = r.user_id AND sr.delete_time IS NULL) AS 'reviewCount'
-    //                 , u.username
-    //                 , u.avatar
-    //             FROM review r
-    //             LEFT JOIN user u
-    //                 ON r.user_id = u.user_id
-    //                 AND u.delete_time IS NULL
-    //             ${ whereCond() }
-    //             GROUP BY r.entity_id, r.user_id
-    //             ORDER BY ${ sortField } ${ sortDirection }
-    //             LIMIT ${ +initialPos }, ${ +finalPos }
-    //     `, { type: sequelize.QueryTypes.SELECT})
-    // );
-    // let reviewsCount, error;
-    // [error, entity] = await to(Entity.findById(entityId));
-
-    // if(err || error) return ReE(res, err || error, 422);
-    // return ReS(res, {data: reviews, count: entity.reviewCount }, 200);
+    
+    if(data.success) {
+        return ReS(res, data);
+    } else {
+        return ReE(res, data);
+    }
 }
 module.exports.getReviews = getReviews;
 

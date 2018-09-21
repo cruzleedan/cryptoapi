@@ -1,3 +1,4 @@
+const debug = require('debug');
 const { ExtractJwt, Strategy } = require('passport-jwt');
 const AnonymousStrategy = require('passport-anonymous').Strategy;
 const BasicStrategy = require('passport-http').BasicStrategy;
@@ -46,7 +47,7 @@ module.exports = function(passport){
                 })
             );
             if(error) return done(error, false);
-            if(user) return done({'error': 'Email already registered, please login using your email instead.'}, false);
+            if(user) return done(null, user);
             [err, user] = await to (
                 User.findOrCreate({where: {facebookId: profile.id}, defaults: {
                     facebook_id: profile.id,

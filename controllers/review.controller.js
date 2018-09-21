@@ -109,7 +109,7 @@ const getReviews = async (req, res) => {
         paranoid: true
     };
     
-    return filterFn(res, {
+    const data = await filterFn(res, {
         config,
         filter,
         filterFields,
@@ -117,6 +117,11 @@ const getReviews = async (req, res) => {
         count: true,
         hashColumns: ['id', 'userId', {'User': ['id']}]
     });
+    if(data.success) {
+        return ReS(res, data);
+    } else {
+        return ReE(res, data);
+    }
 };
 module.exports.getReviews = getReviews;
 

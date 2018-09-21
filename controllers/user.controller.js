@@ -350,7 +350,7 @@ const getUsers = async (req, res) => {
         paranoid: true
     };
     
-    return filterFn(res, {
+    const data = await filterFn(res, {
         config,
         filter,
         filterFields,
@@ -359,10 +359,15 @@ const getUsers = async (req, res) => {
         parseToJSON: ['roles'],
         hashColumns: ['id']
     });
+    if(data.success) {
+        return ReS(res, data);
+    } else {
+        return ReE(res, data);
+    }
 }
 module.exports.getUsers = getUsers;
 
-const getUserEntities = async (req, res) => {
+const getUserEntities = async (req, res, opts = { getRawData: false }) => {
     let err, reviews;
     const queryParams = req.query,
     userId = queryParams.userId ? decodeHash(queryParams.userId) : req.user.id;
@@ -385,8 +390,7 @@ const getUserEntities = async (req, res) => {
         limit: finalPos,
         paranoid: true
     };
-    
-    return filterFn(res, {
+    const resp = filterFn(res, {
         config,
         filter,
         filterFields,
@@ -395,10 +399,21 @@ const getUserEntities = async (req, res) => {
         hashColumns: ['id']
     });
 
+    if(opts.getRawData){
+        return resp;
+    } else {
+        const data = await resp;
+        if(data.success) {
+            return ReS(res, data);
+        } else {
+            return ReE(res, data);
+        }
+    }
+
 }
 module.exports.getUserEntities = getUserEntities;
 
-const getUserReviews = async (req, res) => {
+const getUserReviews = async (req, res, opts = { getRawData: false }) => {
     let err, reviews;
     const queryParams = req.query,
     userId = queryParams.userId ? decodeHash(queryParams.userId) : req.user.id;
@@ -428,14 +443,25 @@ const getUserReviews = async (req, res) => {
         paranoid: true
     };
     
-    return filterFn(res, {
-        config,
-        filter,
-        filterFields,
-        model: Review,
-        count: false,
-        hashColumns: ['id', 'entityId', 'userId', {'Entity': ['id']}]
-    });
+    let resp = filterFn(res, {
+            config,
+            filter,
+            filterFields,
+            model: Review,
+            count: false,
+            hashColumns: ['id', 'entityId', 'userId', {'Entity': ['id']}]
+        });
+
+    if(opts.getRawData){
+        return resp;
+    } else {
+        const data = await resp;
+        if(data.success) {
+            return ReS(res, data);
+        } else {
+            return ReE(res, data);
+        }
+    }
 
 }
 module.exports.getUserReviews = getUserReviews;
@@ -798,3 +824,14 @@ const fbLogin = async function(req, res){
     return getUserInfo(req, res, user);
 }
 module.exports.fbLogin = fbLogin;
+
+const getUserActivity = async function(req, res) {
+    console.log('QUERY', req.query);
+    const userId = req.user.id;
+    let entities, reviews, err;
+    [entities, reviews] = await Promise.all([getUserEntities(req, res, {getRawData: true}), getUserReviews(req, res, {getRawData: true})]);
+    console.log('Entities', entities);
+    console.log('Reviews', reviews);
+    return ReS(res, {entities, reviews});
+};
+module.exports.getUserActivity = getUserActivity;

@@ -18,13 +18,23 @@ module.exports.Dashboard = Dashboard;
 
 const getEntities = async (req, res) => {
 	const queryParams = req.query,
-	field = queryParams.field,
     pageNumber = parseInt(queryParams.pageNumber),
     pageSize = parseInt(queryParams.pageSize) || 10,
     initialPos = isNaN(pageNumber) ? 0 : pageNumber * pageSize,
     finalPos = initialPos + pageSize;
+    let field = queryParams.field;
+    try {
+        field = field ? JSON.parse(field) : [[]];
+    } catch (e) {
+        field = [['createdAt', 'desc']];
+    }
     let err, entities;
-    if(!['rating', 'createdAt', 'reviewCount'].includes(field)) return ReE(res, 'Invalid Request');
+    const isSortFieldsValid = () => {
+        return field.every(sortField => {
+            return ['rating', 'createdAt', 'reviewCount'].includes(sortField[0])
+        });
+    }
+    if(!isSortFieldsValid()) return ReE(res, 'Invalid Request');
     const arr = ['id', 'entity_id', 'review', 'createdAt', 'rating', 'upvoteTally', 'downvoteTally'];
 
 
@@ -43,10 +53,9 @@ const getEntities = async (req, res) => {
             //  attributes: ['id', 'username', 'avatar']
             // }],
             separate: true,
-            order: [['rating', 'desc']],
-            limit: 1
+            order: [['rating', 'desc']]
         }],
-        order: [[field, 'desc']],
+        order: field,
         offset: initialPos,
         limit: finalPos
     };
@@ -56,31 +65,11 @@ const getEntities = async (req, res) => {
     );
     if(err) return ReE(res, err, 422);
     if(!entities) return ReE(res, 'Entity not found', 422);
-    const reviewers_ids = entities.map(row => {
-    	return row.Reviews && row.Reviews.length ? row.Reviews[0]['userId'] : false;
-    }).filter(id => id);
 
-    let reviewers;
-    [err, reviewers] = await to(
-    	User.findAll({
-    		attributes: ['id', 'username', 'email', 'avatar'],
-    		where: {id: {$in: reviewers_ids}}
-    	})
-    );
 
+    
     if(err) return ReE(res, err, 422);
     entities = hashColumns(['id', 'userId', 'categoryId', {'Reviews': ['id', 'userId', 'entityId']}], entities);
-    reviewers = hashColumns(['id'], reviewers);
-    entities = entities.map(entity => {
-    	if(entity.Reviews && entity.Reviews instanceof Array && entity.Reviews.length){
-    		entity.Reviews = entity.Reviews.map(review => { 
-    			const user = reviewers.filter(reviewer => reviewer.id === review.userId);
-    			review.User = user && user.length ? user[0] : {};
-    			return review;
-    		});
-    	}
-    	return entity;
-    })
     return ReS(res, {data: entities});
 }
 module.exports.getEntities = getEntities;

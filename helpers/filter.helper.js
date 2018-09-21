@@ -53,9 +53,9 @@ const getFieldsOfKeywordDataType = (model, keywordDataType, filterFields) => {
     return fieldsOfSameDataType;
 }
 const parseFieldsToJSON = (fields, rows) => {
-    console.log('Parse fields to json starts');
+    // console.log('Parse fields to json starts');
     if(!fields.length) return rows;
-    console.log('Parse fields', fields);
+    // console.log('Parse fields', fields);
     rows = rows.map(row => {
         fields.forEach(field => {
             if(row.hasOwnProperty(field) && !(row[field] instanceof Array)) {
@@ -73,126 +73,142 @@ const parseFieldsToJSON = (fields, rows) => {
  * @param  {Object}
  * @return {Object}
  */
-const filterFn = (res, param, opts={}) => {
-    if(!param.hasOwnProperty('filter') || !param.hasOwnProperty('model')) return ReE(res, 'Filter is required', 422);
-    let cfg = {};
-    const filter = param.filter,
-    model = param.model,
-    config = param.config || {},
-    count = param.count,
-    tblAttr = model.tableAttributes,
-    filterFields = param.filterFields || [],
-    hashColumns = param.hashColumns || [],
-    parseToJSON = param.parseToJSON || [];
-    if(typeof filter === 'object') {
-        /*------------------------------ START ------------------------------
-        | 1. Column Search - Search one column containing the keyword
-        */
-        /*
-            filter = {
-                name: 'Dan',
-                age: 22
+const filterFn = async (res, param, opts={}) => {
+    let promise = new Promise((resolve, reject) => {
+        if(!param.hasOwnProperty('filter') || !param.hasOwnProperty('model')) reject({success: false, error: 'Filter is required'});
+        let cfg = {};
+        let filter = param.filter;
+        if (typeof filter === 'string') {
+            try {
+                filter = JSON.parse(filter);
+            } catch (e) {
+                filter = filter;
             }
-            cfg = {
-                {name: {[Op.like]: 'Dan'}},
-                {age: 22}
-            }
-        */
-        let fieldExists, 
-            type, 
-            fieldDT,
-            filterValue;
-        Object.keys(filter).forEach((filterField) => {
-            filterValue = filter[filterField];
-            if(!filterValue) return;
-
-            fieldExists = tblAttr.hasOwnProperty(filterField),
-            type = fieldExists ? tblAttr[filterField].type.constructor.key: '',
-            fieldDT = getFieldDataType(type);
-
-            if(filterValue && fieldDT == 'STRING') {
-                cfg[filterField] = { [Op.like]: `%${filterValue}%` };
-            } else if(filterValue && fieldDT == 'NUMBER') {
-                if(typeof filterValue !== 'number' && 
-                    (tblAttr[filterField].hasOwnProperty('references') || tblAttr[filterField].primaryKey)
-                ){
-                    filterValue = decodeHash(filterValue);
-                }
-                cfg[filterField] = filterValue;
-            } else if(filterValue && fieldDT == 'DATE') {
-                let dayBefore = new Date(filterValue);
-                dayBefore.setDate(dayBefore.getDate() + 1);
-                cfg[filterField] = { [Op.between]: [new Date(filterValue), dayBefore]};
-            }
-        });
-    }
-    else if(typeof filter === 'string') {
-        /*------------------------------ START ------------------------------
-        | General Search - search multiple fields containing the keyword
-        */
-        /*  
-            filter = 'Dan';
-            filterFields = []; // If not specified then search all columns with the same data type as the keyword
-            cfg = {
-                $or: [
-                    {name: {[Op.like]: 'Dan'}},
-                    {username: {[Op.like]: 'Dan'}}
-                ]
-            }
-        */
-        const keywordDataType = getKeywordDataType(filter);
-        const fields = getFieldsOfKeywordDataType(model, keywordDataType, filterFields);
-        const where = fields
-                        .map(field => {
-                            const ob = {},
-                            filterValue = filter;
-                            let cond;
-                            if(filter) {
-                                if(keywordDataType === 'STRING') {
-                                    cond = {[Op.like]: `%${filterValue}%`}
-                                } else if(keywordDataType === 'NUMBER') {
-                                    cond = +filterValue;
-                                } else if(keywordDataType === 'DATE') {
-                                    let dayBefore = new Date(filterValue);
-                                    dayBefore.setDate(dayBefore.getDate() + 1);
-                                    cond = { [Op.between]: [new Date(filterValue), dayBefore]};
-                                }
-                            }
-                            ob[field] = cond;
-                            return ob;
-                        });
-        if(where.length){
-            cfg = {
-                $or: where
-            };
         }
-    }
-    if(Object.keys(cfg).length){
-        config.where = Object.assign(cfg, config.where);
-    }
-    if(count){
-        model.findAndCountAll(config)
-        .then(result => {
-            console.log('with count');
-            result.rows = hashColumnsFn(hashColumns, result.rows);
-            console.log('1. result rows');
-            result.rows = parseFieldsToJSON(parseToJSON, result.rows);
-            console.log('2. result rows');
-            return ReS(res, Object.assign(opts, {data: result.rows, count: result.count}), 200);
-        }).catch(err => {
-            return ReE(res, err, 422);
-        });
-    }
-    else {
-        model.findAll(config)
-        .then(result => {
-            result = hashColumnsFn(hashColumns, result);
-            result = parseFieldsToJSON(parseToJSON, result);
-            return ReS(res, Object.assign(opts, {data: result}), 200);
-        }).catch(err => {
-            return ReE(res, err, 422);
-        });
-    }
+        const model = param.model,
+        config = param.config || {},
+        count = param.count,
+        tblAttr = model.tableAttributes,
+        filterFields = param.filterFields || [],
+        hashColumns = param.hashColumns || [],
+        parseToJSON = param.parseToJSON || [];
+        if(typeof filter === 'object') {
+            /*------------------------------ START ------------------------------
+            | 1. Column Search - Search one column containing the keyword
+            */
+            /*
+                filter = {
+                    name: 'Dan',
+                    age: 22
+                }
+                cfg = {
+                    {name: {[Op.like]: 'Dan'}},
+                    {age: 22}
+                }
+            */
+            let fieldExists, 
+                type, 
+                fieldDT,
+                filterValue;
+            Object.keys(filter).forEach((filterField) => {
+                filterValue = filter[filterField];
+                if(!filterValue) return;
+
+                fieldExists = tblAttr.hasOwnProperty(filterField),
+                type = fieldExists ? tblAttr[filterField].type.constructor.key: '',
+                fieldDT = getFieldDataType(type);
+
+                if(filterValue && fieldDT == 'STRING') {
+                    cfg[filterField] = { [Op.like]: `%${filterValue}%` };
+                } else if(filterValue && fieldDT == 'NUMBER') {
+                    if(typeof filterValue !== 'number' && 
+                        (tblAttr[filterField].hasOwnProperty('references') || tblAttr[filterField].primaryKey)
+                    ){
+                        filterValue = decodeHash(filterValue);
+                    }
+                    cfg[filterField] = filterValue;
+                } else if(filterValue && fieldDT == 'DATE') {
+                    let dayBefore = new Date(filterValue);
+                    dayBefore.setDate(dayBefore.getDate() + 1);
+                    cfg[filterField] = { [Op.between]: [new Date(filterValue), dayBefore]};
+                }
+            });
+        }
+        else if(typeof filter === 'string') {
+            /*------------------------------ START ------------------------------
+            | General Search - search multiple fields containing the keyword
+            */
+            /*  
+                filter = 'Dan';
+                filterFields = []; // If not specified then search all columns with the same data type as the keyword
+                cfg = {
+                    $or: [
+                        {name: {[Op.like]: 'Dan'}},
+                        {username: {[Op.like]: 'Dan'}}
+                    ]
+                }
+            */
+            const keywordDataType = getKeywordDataType(filter);
+            const fields = getFieldsOfKeywordDataType(model, keywordDataType, filterFields);
+            const where = fields
+                            .map(field => {
+                                const ob = {},
+                                filterValue = filter;
+                                let cond;
+                                if(filter) {
+                                    if(keywordDataType === 'STRING') {
+                                        cond = {[Op.like]: `%${filterValue}%`}
+                                    } else if(keywordDataType === 'NUMBER') {
+                                        cond = +filterValue;
+                                    } else if(keywordDataType === 'DATE') {
+                                        let dayBefore = new Date(filterValue);
+                                        dayBefore.setDate(dayBefore.getDate() + 1);
+                                        cond = { [Op.between]: [new Date(filterValue), dayBefore]};
+                                    }
+                                }
+                                ob[field] = cond;
+                                return ob;
+                            });
+            if(where.length){
+                cfg = {
+                    $or: where
+                };
+            }
+        }
+        if(Object.keys(cfg).length){
+            config.where = Object.assign(cfg, config.where);
+        }
+    
+        if(count){
+            model.findAndCountAll(config)
+            .then(result => {
+                console.log('with count');
+                result.rows = hashColumnsFn(hashColumns, result.rows);
+                console.log('1. result rows');
+                result.rows = parseFieldsToJSON(parseToJSON, result.rows);
+                console.log('2. result rows');
+                // return ReS(res, Object.assign(opts, {data: result.rows, count: result.count}), 200);
+                resolve(Object.assign(opts, {success: true, data: result.rows, count: result.count}));
+            }).catch(err => {
+                // return ReE(res, err, 422);
+                reject({success: false, error: err});
+            });
+        }
+        else {
+            model.findAll(config)
+            .then(result => {
+                result = hashColumnsFn(hashColumns, result);
+                result = parseFieldsToJSON(parseToJSON, result);
+                // return ReS(res, Object.assign(opts, {data: result}), 200);
+                resolve(Object.assign(opts, {success: true, data: result}));
+            }).catch(err => {
+                // return ReE(res, err, 422);
+                reject({success: false, error: err});
+            });
+        }
+    });
+    const data = await promise;
+    return data;
 };
 module.exports.filterFn = filterFn;
 
