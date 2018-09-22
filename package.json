@@ -38,7 +38,8 @@
   },
   "scripts": {
     "dev": "nodemon www.js",
-    "start": "pm2 start www.js"
+    "prod": "pm2 start www.js",
+    "start": "nodemon www.js",
   },
   "author": "Tingkersoft",
   "license": "ISC",
