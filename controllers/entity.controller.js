@@ -128,7 +128,7 @@ const postNewEntity = async (req, res) => {
 module.exports.postNewEntity = postNewEntity;
 
 const deleteImgFiles = (res, id, exceptArr) => {
-    const directory = path.join(__dirname, './../../public/images/entities/'+id);
+    const directory = path.join(__dirname, './../public/images/entities/'+id);
     if (!fs.existsSync(directory)){
         fs.mkdirSync(directory);
     }

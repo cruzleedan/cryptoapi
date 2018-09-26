@@ -35,7 +35,11 @@ const hashColumns = (columns, rows) => {
                                 })
                             }
                             else {
-                                row[key][c] = hashids.encode(row[key][c]);
+                                try {
+                                    row[key][c] = hashids.encode(row[key][c]);
+                                } catch (e) {
+                                    
+                                }
                             }
                         });
                     }
@@ -53,7 +57,11 @@ const hashColumns = (columns, rows) => {
                 for(let key in obj) {
                     obj[key] = obj[key] instanceof Array ? obj[key] : [obj[key]];
                     obj[key].forEach(c => {
-                        row[key][c] = hashids.encode(row[key][c]);
+                        try {
+                            row[key][c] = hashids.encode(row[key][c]);
+                        } catch(e) {
+
+                        }
                     });
                 }
             }

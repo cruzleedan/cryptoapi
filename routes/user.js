@@ -15,6 +15,13 @@ module.exports = (router, passport) => {
 		UserController.getUsers
 	);
 	router.get('/users/checkusername', UserController.checkUsernameNotTaken);
+	router.get('/user/:id/activity', 
+		[
+			check('id').not().isEmpty().withMessage('User ID is required'),
+		],
+		validate,
+		UserController.getUserActivity
+	);
 	router.get('/users/:id', 
 		[
 			check('id').not().isEmpty().withMessage('ID is required'),

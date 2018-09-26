@@ -68,14 +68,21 @@ module.exports.forgotPassword = forgotPassword;
 const create = async function(req, res){
     const body = req.body;
     let avatar = res.req && res.req.file && res.req.file.filename ? res.req.file : '';
-    let matchedPassword = body.matchedPassword ? JSON.parse(JSON.stringify(body.matchedPassword)) : {};
+    let matchedPassword = body.matchedPassword;
+    if (typeof matchedPassword === 'string') {
+        try {
+            matchedPassword = JSON.parse(body.matchedPassword);
+        } catch(e) {
+            matchedPassword = {};
+        }
+    }
     
     if(avatar) {
         body['avatar'] = avatar.filename;
     }
     if(!body.unique_key && !body.email && !body.username){
         return ReE(res, 'Please enter an email or username to register.');
-    } else if(!matchedPassword || !matchedPassword.new){
+    } else if(Object.keys(matchedPassword).length === 0 || !matchedPassword.hasOwnProperty('new')){
         return ReE(res, 'Please enter a password to register.');
     }else{
         let err, user;
@@ -370,7 +377,7 @@ module.exports.getUsers = getUsers;
 const getUserEntities = async (req, res, opts = { getRawData: false }) => {
     let err, reviews;
     const queryParams = req.query,
-    userId = queryParams.userId ? decodeHash(queryParams.userId) : req.user.id;
+    userId = req.params && req.params['id'] ? decodeHash(req.params['id']) : req.user.id;
     filter = queryParams.filter,
     sortDirection = queryParams.sortDirection || 'asc',
     sortField = queryParams.sortField || 'createdAt',
@@ -380,7 +387,11 @@ const getUserEntities = async (req, res, opts = { getRawData: false }) => {
     finalPos = initialPos + pageSize,
     filterFields = [];
     
-
+    console.log('--------------------------------------------------------------------');
+    console.log('GET USER ENTITIES');
+    console.log('params ', req.params);
+    console.log('USER ID ', userId);
+    console.log('--------------------------------------------------------------------');
     
     const config = {
         where: {userId},
@@ -416,7 +427,7 @@ module.exports.getUserEntities = getUserEntities;
 const getUserReviews = async (req, res, opts = { getRawData: false }) => {
     let err, reviews;
     const queryParams = req.query,
-    userId = queryParams.userId ? decodeHash(queryParams.userId) : req.user.id;
+    userId = req.params && req.params['id'] ? decodeHash(req.params['id']) : req.user.id;
     filter = queryParams.filter,
     sortDirection = queryParams.sortDirection || 'asc',
     sortField = queryParams.sortField || 'createdAt',
@@ -426,7 +437,11 @@ const getUserReviews = async (req, res, opts = { getRawData: false }) => {
     finalPos = initialPos + pageSize,
     filterFields = [];
     
-
+    console.log('--------------------------------------------------------------------');
+    console.log('GET USER ENTITIES');
+    console.log('params ', req.params);
+    console.log('USER ID ', userId);
+    console.log('--------------------------------------------------------------------');
     
     const config = {
         where: {userId},
@@ -783,6 +798,7 @@ module.exports.remove = remove;
 
 const getUserInfo = async function(req, res, user) {
     let err, reviewCount, entitiesCount;
+    // use Promise.all instead to run query concurrently
     [err, reviewsCount] = await to(
         Review.count({
             where: {
@@ -826,8 +842,11 @@ const fbLogin = async function(req, res){
 module.exports.fbLogin = fbLogin;
 
 const getUserActivity = async function(req, res) {
-    console.log('QUERY', req.query);
-    const userId = req.user.id;
+    let userId = req.user && req.user.id ? req.user.id : '';
+    if (!userId) {
+        userId = req.params['id'] ? decodeHash(req.params['id']) : '';
+    }
+    if (!userId) return ReE(res, {error: 'User ID is required'}, 422);
     let entities, reviews, err;
     [entities, reviews] = await Promise.all([getUserEntities(req, res, {getRawData: true}), getUserReviews(req, res, {getRawData: true})]);
     console.log('Entities', entities);

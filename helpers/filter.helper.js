@@ -186,7 +186,7 @@ const filterFn = async (res, param, opts={}) => {
                 result.rows = hashColumnsFn(hashColumns, result.rows);
                 console.log('1. result rows');
                 result.rows = parseFieldsToJSON(parseToJSON, result.rows);
-                console.log('2. result rows');
+                console.log('2. result rows', result.count);
                 // return ReS(res, Object.assign(opts, {data: result.rows, count: result.count}), 200);
                 resolve(Object.assign(opts, {success: true, data: result.rows, count: result.count}));
             }).catch(err => {
