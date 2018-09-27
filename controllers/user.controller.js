@@ -50,7 +50,7 @@ const forgotPassword = async (req, res) => {
         template: 'forgot-password-email',
         subject: 'Reset Password',
         context: {
-            url: `${ CONFIG.frontend_domain }/auth/forgot-password-reset?token=${ resetPasswordToken }`,
+            url: `${ CONFIG.frontend_domain }/admin/forgot-password-reset?token=${ resetPasswordToken }`,
             name: user.username || user.firstname
         }
     };
@@ -395,7 +395,7 @@ const getUserEntities = async (req, res, opts = { getRawData: false }) => {
     
     const config = {
         where: {userId},
-        attributes: ['id','name', 'desc', 'rating', 'reviewCount', 'image', 'createdAt', 'approved'],
+        attributes: ['id', 'userId', 'name', 'desc', 'rating', 'reviewCount', 'image', 'createdAt', 'approved'],
         order: [[sortField, sortDirection]],
         offset: initialPos,
         limit: finalPos,
@@ -407,7 +407,7 @@ const getUserEntities = async (req, res, opts = { getRawData: false }) => {
         filterFields,
         model: Entity,
         count: false,
-        hashColumns: ['id']
+        hashColumns: ['id', 'userId']
     });
 
     if(opts.getRawData){
