@@ -6,20 +6,31 @@ const { hashColumns, decodeHash }  = require('../services/hash.service');
 const {filterFn} = require('../helpers/filter.helper');
 const { updateReviewRtng } = require('../helpers/review.helper');
 const updateReview = async (req, res) => {
-    // const userId = req.user.id,
-    // entity_id = req.params['id'],
-    // updatedReview = req.body;
+    const userId = req.user.id,
+    updatedReview = req.body;
+    let reviewId = req.params['id'];
+    reviewId = decodeHash(reviewId);
 
-    // if(!userId || !entity_id) return ReE(res, 'User Id and Entity Id are required.', 422);
+    if(!reviewId) return ReE(res, 'ReviewId is required.', 422);
 
-    // let review, err;
-    // [err, review] = await to(Review.update(updatedReview, {
-    //         where: {entity_id: entity_id, user_id: user_id},
-    //         individualHooks: true 
-    //     })
-    // );
-    // if(err) return ReE(res, err, 422);
-    // return ReS(res, {success: true, data: review}, 200);
+    let review, err;
+    [err, review] = await to(Review.findById(reviewId));
+    if (err) return ReE(res, err, 422);
+    if (!review) return ReE(res, 'Review is not found', 422);
+
+    return sequelize.transaction(transaction => {
+        return review.update(updatedReview, {
+            transaction
+        });
+    })
+    .then(review => updateReviewRtng(res, review))
+    .then(review => {
+        review = hashColumns(['id', 'entityId', 'userId'], review);
+        return ReS(res, {data: review, created: false, success: true}, 200); 
+    })
+    .catch(err => {
+        return ReE(res, err, 422);
+    });
 }
 module.exports.updateReview = updateReview;
 
