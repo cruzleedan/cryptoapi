@@ -12,4 +12,13 @@ module.exports = (router, passport) => {
 		validate,
   		ReviewController.getReviewById
   	);
+  	router.put('/reviews/:id/update', 
+		[
+			check('id').not().isEmpty().withMessage('Review ID is required')
+		], 
+		validate,
+		passport.authenticate('jwt', {session: false}),
+		permit('admin'),
+		ReviewController.updateReview
+	);
 }

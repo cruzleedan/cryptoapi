@@ -97,15 +97,6 @@ module.exports = (router, passport) => {
 		ReviewController.postNewReview
 	);
 
-	router.put('/entities/:id/reviews/update', 
-		[
-			check('id').not().isEmpty().withMessage('Entity ID is required')
-		], 
-		validate,
-		passport.authenticate('jwt', {session: false}), 
-		ReviewController.updateReview
-	);
-
 	router.put('/entities/reviews/:reviewId/vote', 
 		[
 			check('reviewId').not().isEmpty().withMessage('Review ID is required'),
