@@ -55,15 +55,13 @@ const getEntities = async (req, res) => {
         },
         include: [{
             model: Review,
-            required: false,
             attributes: ['id', 'userId', 'entityId', 'title', 'review', 'upvoteTally', 'downvoteTally', 'rating', 'createdAt'],
             // include: [{
             //  model: User,
             //  as: 'ReviewUser',
             //  attributes: ['id', 'username', 'avatar']
             // }],
-            // separate: true,
-            duplicating: false,
+            separate: true,
             required: false,
             order: [['rating', 'desc']]
         }],
@@ -73,6 +71,11 @@ const getEntities = async (req, res) => {
     };
     if(typeof filter === 'object' && filter.hasOwnProperty('reviewsRequired')){
         config.include[0].required = !!(filter['reviewsRequired']);
+        if (!!(filter['reviewsRequired'])) {
+            // delete config.include[0].separate;
+            config.include[0].duplicating = true;
+            config.where.reviewCount = {$gt: 0};
+        }
     }
 
     if(isAdmin(req, res)) {
@@ -84,7 +87,7 @@ const getEntities = async (req, res) => {
         if(filter.hasOwnProperty('approved')) {
             config.where.approved = !!(filter.approved);
         } else {
-            delete config.where.approved;
+            // delete config.where.approved;
         }
     }
 	// [err, entities] = await to(
