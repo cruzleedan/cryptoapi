@@ -1,12 +1,13 @@
 const EntityController = require('../controllers/entity.controller');
 const ReviewController = require('../controllers/review.controller');
 const VoteController = require('../controllers/vote.controller');
-const { permit } = require('../middleware/permission');
+const { permit, permitAdminOrEntityPublisher } = require('../middleware/permission');
 const { userBlock } = require('../middleware/block');
 const {Review} = require('../models');
 const { check } = require('express-validator/check');
 const { validate, validateImageFile } = require('../middleware/validation');
 const { to, ReE, ReS }  = require('../services/util.service');
+const { decodeHash } = require('../services/hash.service');
 const { Entity } = require('../models');
 
 module.exports = (router, passport) => {
@@ -39,42 +40,31 @@ module.exports = (router, passport) => {
 		passport.authenticate('jwt', {session:false}),
 		validateImageFile('image'),
 		// permit admin or entity creator
-		permit('admin', async (req, res, next) => {
-			const user = req.user;
-			const id = req.params['id'];
-			let entity,err;
-			[err, entity] = await to(Entity.findById(id));
-			if(err) return false;
-			if(!entity) return false;
-			if(user.hasEntity(entity)) {
-				next();
-			}
-			return false;
-		}),
+		permitAdminOrEntityPublisher,
 		EntityController.updateEntity
 	);
 
-	router.post('/entities/:id/edit',
-		[
-			check('id').not().isEmpty().withMessage('Entity ID is required.')
-		],
-		validate,
-		passport.authenticate('jwt', {session:false}),
-		// permit admin or entity creator
-		permit('admin', async (req, res, next) => {
-			const user = req.user;
-			const id = req.params['id'];
-			let entity,err;
-			[err, entity] = await to(Entity.findById(id));
-			if(err) return false;
-			if(!entity) return false;
-			if(user.hasEntity(entity)) {
-				next();
-			}
-			return false;
-		}),
-		EntityController.updateEntity
-	);
+	// router.post('/entities/:id/edit',
+	// 	[
+	// 		check('id').not().isEmpty().withMessage('Entity ID is required.')
+	// 	],
+	// 	validate,
+	// 	passport.authenticate('jwt', {session:false}),
+	// 	// permit admin or entity creator
+	// 	permit('admin', async (req, res, next) => {
+	// 		const user = req.user;
+	// 		const id = req.params['id'];
+	// 		let entity,err;
+	// 		[err, entity] = await to(Entity.findById(id));
+	// 		if(err) return false;
+	// 		if(!entity) return false;
+	// 		if(user.hasEntity(entity)) {
+	// 			next();
+	// 		}
+	// 		return false;
+	// 	}),
+	// 	EntityController.updateEntity
+	// );
 
 	router.delete('/entities/:id',
 		[

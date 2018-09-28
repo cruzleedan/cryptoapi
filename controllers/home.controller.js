@@ -62,13 +62,18 @@ const getEntities = async (req, res) => {
             //  as: 'ReviewUser',
             //  attributes: ['id', 'username', 'avatar']
             // }],
-            separate: true,
+            // separate: true,
+            duplicating: false,
+            required: false,
             order: [['rating', 'desc']]
         }],
         order: field,
         offset: initialPos,
         limit: finalPos
     };
+    if(typeof filter === 'object' && filter.hasOwnProperty('reviewsRequired')){
+        config.include[0].required = !!(filter['reviewsRequired']);
+    }
 
     if(isAdmin(req, res)) {
         [err, pending] = await to(Entity.count({
