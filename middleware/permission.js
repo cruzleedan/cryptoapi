@@ -41,22 +41,22 @@ const permitAdminOrEntityPublisher = async (req, res, next) => {
 		} catch (e) {}
 	}
 	if (userRoles.includes('admin')) { 
-		// console.log('CONTINUE USER IS AN ADMIN');
-		next(); 
+		console.log('CONTINUE USER IS AN ADMIN');
+		return next(); 
 	}
 
 	let id = req.params['id'];
 	id = decodeHash(id);
-	// console.log('check if entity exists');
+	console.log('check if entity exists');
 	let entity, err, userHasEntity;
 	[err, entity] = await to(Entity.findById(id));
 	if (err) return ReE(res, err, 422);
 
-	// console.log('check if user published entity.');
+	console.log('check if user published entity.');
 	[err, userHasEntity] = await to(user.hasEntity(entity));
 	if (err) return ReE(res, err, 422);
 
-	// console.log('USER HAS ENTITY', userHasEntity);
+	console.log('USER HAS ENTITY', userHasEntity);
 	if (!userHasEntity) {
 		res.status(403).json({message: "Forbidden"}); // user is forbidden
 	} else {
