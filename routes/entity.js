@@ -72,7 +72,8 @@ module.exports = (router, passport) => {
 		],
 		validate,
 		passport.authenticate('jwt', {session: false}),
-		permit('admin'),
+		// permit('admin'),
+		permitAdminOrEntityPublisher,
 		EntityController.deleteEntity
 	);
 

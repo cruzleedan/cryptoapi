@@ -159,5 +159,15 @@ module.exports = (router, passport) => {
 		}, 
 		UserController.fbLogin
 	);
-	router.delete('/users', passport.authenticate('jwt', {session:false}), UserController.remove);
+	router.put('/user/:id/restore',
+		[
+			check('id').not().isEmpty().withMessage('User ID is required')
+		],
+		validate,
+		UserController.restoreAccount
+	);
+	router.delete('/user',
+		passport.authenticate('jwt', {session:false}),
+		UserController.deleteAccount
+	);
 }

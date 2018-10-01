@@ -506,6 +506,49 @@ const deleteUserEntity = async (req, res) => {
 }
 module.exports.deleteUserEntity = deleteUserEntity;
 
+const restoreAccount = async function(req, res) {
+    let user, err;
+    let userId = req.params.id;
+    userId = decodeHash(userId);
+    [err, user] = await to(User.findById(userId, {paranoid: false}));
+    if(err) return ReE(res, err, 422);
+    if(!user) return ReE(res, 'User not found', 422);
+    return sequelize
+    .query('CALL sp_restore_delete_user (:userId)', 
+        {replacements: { userId: user.id}})
+    .then((resp) => {
+        if(resp instanceof Array && resp[0] && resp[0].success) {
+            return getUserInfo(req, res, user);
+        }
+        return ReE(res, {error: 'Failed to Restore Account'}, 422);
+    })
+    .catch(err => {
+        return ReE(res, err, 422);
+    });
+}
+module.exports.restoreAccount = restoreAccount;
+
+const deleteAccount = async function(req, res){
+    let user, err;
+    user = req.user;
+    
+    if (!user) return ReE(res, 'User not found', 422);
+
+    return sequelize
+    .query('CALL sp_delete_user (:userId)', 
+        {replacements: { userId: user.id}})
+    .then((resp) => {
+        if(resp instanceof Array && resp[0] && resp[0].success) {
+            return ReS(res, {message:'Deleted User'}, 200);
+        }
+        return ReE(res, {error: 'Failed to Delete User'}, 422);
+    })
+    .catch(err => {
+        return ReE(res, err, 422);
+    });
+}
+module.exports.deleteAccount = deleteAccount;
+
 const deleteUser = async (req, res) => {
     let userId = req.params['id'],
     user, err;
@@ -515,17 +558,31 @@ const deleteUser = async (req, res) => {
     );
     if(err) return ReE(res, err, 422);
     if(!user) return ReE(res, 'User not found', 422);
-    return sequelize.transaction(transaction => {
-        return user.destroy();
-    })
-    .then(user => {
-        user = hashColumns(['id'], user);
-        user = filterFieldsFn(user);
-        return ReS(res, {data: user}, 200);
+
+    return sequelize
+    .query('CALL sp_delete_user (:userId)', 
+        {replacements: { userId: user.id}})
+    .then((resp) => {
+        if(resp instanceof Array && resp[0] && resp[0].success) {
+            return ReS(res, {message:'Deleted User'}, 200);
+        }
+        return ReE(res, {error: 'Failed to Delete User'}, 422);
     })
     .catch(err => {
         return ReE(res, err, 422);
     });
+
+    // return sequelize.transaction(transaction => {
+    //     return user.destroy();
+    // })
+    // .then(user => {
+    //     user = hashColumns(['id'], user);
+    //     user = filterFieldsFn(user);
+    //     return ReS(res, {data: user}, 200);
+    // })
+    // .catch(err => {
+    //     return ReE(res, err, 422);
+    // });
 }
 module.exports.deleteUser = deleteUser;
 
@@ -785,17 +842,6 @@ const updateProfile = async function(req, res){
 }
 module.exports.updateProfile = updateProfile;
 
-const remove = async function(req, res){
-    let user, err;
-    user = req.user;
-    [err, user] = await to(user.destroy());
-    if(err) return ReE(res, 'An Error occured trying to delete user');
-
-    return ReS(res, {message:'Deleted User'}, 204);
-}
-module.exports.remove = remove;
-
-
 const getUserInfo = async function(req, res, user) {
     let err, reviewCount, entitiesCount;
     // use Promise.all instead to run query concurrently
@@ -830,6 +876,7 @@ const login = async function(req, res){
     let err, user;
     [err, user] = await to(authService.authUser(body));
     if(err) return ReE(res, err, 422);
+    if(!user) return ReE(res, 'User not found');
     return getUserInfo(req, res, user);
 }
 module.exports.login = login;
@@ -837,7 +884,12 @@ module.exports.login = login;
 const fbLogin = async function(req, res){
     let user = req.user;
     if(!user) return ReE(res, 'User not found', 422);
-    return getUserInfo(req, res, user);
+    if(user.delete_time) {
+        user = hashColumns(['id'], user);
+        return res.status(200).json({error: 'Account deactivated', userId: user.id})
+    } else {
+        return getUserInfo(req, res, user);
+    }
 }
 module.exports.fbLogin = fbLogin;
 
@@ -849,8 +901,6 @@ const getUserActivity = async function(req, res) {
     if (!userId) return ReE(res, {error: 'User ID is required'}, 422);
     let entities, reviews, err;
     [entities, reviews] = await Promise.all([getUserEntities(req, res, {getRawData: true}), getUserReviews(req, res, {getRawData: true})]);
-    console.log('Entities', entities);
-    console.log('Reviews', reviews);
     return ReS(res, {entities, reviews});
 };
 module.exports.getUserActivity = getUserActivity;

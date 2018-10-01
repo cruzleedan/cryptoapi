@@ -22,7 +22,11 @@ const hashColumns = (columns, rows) => {
             let row = rows[i];
             columns.forEach(col => {
                 if(typeof col === 'string'){
-                    row[col] = hashids.encode(row[col]);
+                    try {
+                        row[col] = hashids.encode(row[col]);
+                    } catch (e) {
+                        console.log('1. CAUGHT AN ERROR');
+                    }
                 } else if(typeof col === 'object'){
                     let obj = col;
                     for(let key in obj) {
@@ -30,7 +34,11 @@ const hashColumns = (columns, rows) => {
                         obj[key].forEach(c => {
                             if(row[key] instanceof Array) {
                                 row[key] = row[key].map(subRow => {
-                                    subRow[c] = hashids.encode(subRow[c]);
+                                    try {
+                                        subRow[c] = hashids.encode(subRow[c]);
+                                    } catch (e) {
+                                        console.log('2. CAUGHT AN ERROR');
+                                    }
                                     return subRow;
                                 })
                             }
@@ -38,7 +46,7 @@ const hashColumns = (columns, rows) => {
                                 try {
                                     row[key][c] = hashids.encode(row[key][c]);
                                 } catch (e) {
-                                    
+                                    console.log('3. CAUGHT AN ERROR');
                                 }
                             }
                         });
@@ -51,7 +59,11 @@ const hashColumns = (columns, rows) => {
         let row = rows;
         columns.forEach(col => {
             if(typeof col === 'string'){
-                row[col] = hashids.encode(row[col]);
+                try {
+                    row[col] = hashids.encode(row[col]);
+                } catch(e) {
+                    console.log('4. CAUGHT AN ERROR');
+                }
             } else if(typeof col === 'object'){
                 let obj = col;
                 for(let key in obj) {
@@ -60,7 +72,7 @@ const hashColumns = (columns, rows) => {
                         try {
                             row[key][c] = hashids.encode(row[key][c]);
                         } catch(e) {
-
+                            console.log('5. CAUGHT AN ERROR');
                         }
                     });
                 }

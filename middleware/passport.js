@@ -33,6 +33,7 @@ module.exports = function(passport){
             let error, user;
             [error, user] = await to (
                 User.findOne({
+                    paranoid: false, 
                     where: {
                         email: profile.emails[0].value,
                         facebookId: {

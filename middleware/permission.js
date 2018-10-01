@@ -1,4 +1,4 @@
-const { Entity } = require('../models');
+const { Entity, Review } = require('../models');
 const { decodeHash } = require('../services/hash.service');
 const { to, ReE, ReS }  = require('../services/util.service');
 
@@ -64,3 +64,36 @@ const permitAdminOrEntityPublisher = async (req, res, next) => {
 	}
 };
 module.exports.permitAdminOrEntityPublisher = permitAdminOrEntityPublisher;
+
+const permitAdminOrReviewer = async (req, res, next) => {
+	const user = req.user;
+	let userRoles = req.user.roles || [];
+	if (typeof userRoles === 'string') {
+		try {
+			userRoles = JSON.parse(userRoles);
+		} catch (e) {}
+	}
+	if (userRoles.includes('admin')) { 
+		console.log('CONTINUE USER IS AN ADMIN');
+		return next(); 
+	}
+
+	let id = req.params['id'];
+	id = decodeHash(id);
+	console.log('check if review exists');
+	let review, err, userHasReview;
+	[err, review] = await to(Review.findById(id));
+	if (err) return ReE(res, err, 422);
+
+	console.log('check if user published review.');
+	[err, userHasReview] = await to(user.hasReview(review));
+	if (err) return ReE(res, err, 422);
+
+	console.log('USER HAS REVIEW', userHasReview);
+	if (!userHasReview) {
+		res.status(403).json({message: "Forbidden"}); // user is forbidden
+	} else {
+		return next();
+	}
+};
+module.exports.permitAdminOrReviewer = permitAdminOrReviewer;

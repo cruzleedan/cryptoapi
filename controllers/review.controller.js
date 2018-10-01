@@ -175,3 +175,29 @@ const getReviewsByEntityId = async(req, res) => {
 
 }
 module.exports.getReviewsByEntityId = getReviewsByEntityId;
+
+const deleteReview = async(req, res) => {
+    let user = req.user,
+    reviewId = req.params['id'],
+    review, err, entityId;
+    reviewId = decodeHash(reviewId);
+    [err, review] = await to(
+        Review.findById(reviewId)
+    );
+    if(err) return ReE(res, err, 422);
+    if(!review) return ReE(res, 'Review not found');
+    entityId = review.entityId;
+    
+    return sequelize.transaction(transaction => {
+        return review.destroy();
+    })
+    .then(status => updateReviewRtng(res, {entityId}))
+    .then(review => {
+        return ReS(res, {data: review}, 200); 
+    })
+    .catch(err => {
+        return ReE(res, err, 422);
+    });
+
+}
+module.exports.deleteReview = deleteReview;

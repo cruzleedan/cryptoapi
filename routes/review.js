@@ -1,5 +1,5 @@
 const ReviewController = require('../controllers/review.controller');
-const { permit } = require('../middleware/permission');
+const { permi, permitAdminOrReviewer } = require('../middleware/permission');
 const { validate, validateImageFile } = require('../middleware/validation');
 const { check } = require('express-validator/check');
 const { ReE } = require('../services/util.service');
@@ -18,7 +18,15 @@ module.exports = (router, passport) => {
 		], 
 		validate,
 		passport.authenticate('jwt', {session: false}),
-		permit('admin'),
+		// permit('admin'),
+		permitAdminOrReviewer,
 		ReviewController.updateReview
+	);
+	router.delete('/reviews/:id',
+		[],
+		validate,
+		passport.authenticate('jwt', {session: false}),
+		permitAdminOrReviewer,
+		ReviewController.deleteReview
 	);
 }

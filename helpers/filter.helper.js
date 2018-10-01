@@ -182,11 +182,12 @@ const filterFn = async (res, param, opts={}) => {
         if(count){
             model.findAndCountAll(config)
             .then(result => {
-                console.log('with count');
-                result.rows = hashColumnsFn(hashColumns, result.rows);
-                console.log('1. result rows');
-                result.rows = parseFieldsToJSON(parseToJSON, result.rows);
-                console.log('2. result rows', result.count);
+                console.log('Find record with count ', result.count);
+                if (result && result.rows) {
+                    result.rows = hashColumnsFn(hashColumns, result.rows);
+                    result.rows = parseFieldsToJSON(parseToJSON, result.rows);
+                }
+
                 // return ReS(res, Object.assign(opts, {data: result.rows, count: result.count}), 200);
                 resolve(Object.assign(opts, {success: true, data: result.rows, count: result.count}));
             }).catch(err => {
@@ -215,17 +216,26 @@ module.exports.filterFn = filterFn;
 const hashColumnsFn = (columns, rows) => {
     rows = JSON.parse(JSON.stringify(rows));
     if(rows instanceof Array) {
+        console.log('rows is an Array');
         for(let i = 0; i<rows.length; i++){
             let row = rows[i];
             columns.forEach(col => {
                 if(typeof col === 'string'){
-                    row[col] = hashids.encode(row[col]);
+                    try {
+                        row[col] = hashids.encode(row[col]);
+                    } catch (e) {
+                        console.log('1. CAUGHT AN ERROR ON FILTER.HELPER.JS HASHCOLUMNSFN() ');
+                    }
                 } else if(typeof col === 'object'){
                     let obj = col;
                     for(let key in obj) {
                         obj[key] = obj[key] instanceof Array ? obj[key] : [obj[key]];
                         obj[key].forEach(c => {
-                            row[key][c] = hashids.encode(row[key][c]);
+                            try {
+                                row[key][c] = hashids.encode(row[key][c]);
+                            } catch(e) {
+                                console.log('2. CAUGHT AN ERROR ON FILTER.HELPER.JS HASHCOLUMNSFN() ');
+                            }
                         });
                     }
                 }
@@ -233,20 +243,34 @@ const hashColumnsFn = (columns, rows) => {
         }
     }
     else {
+        console.log('rows is not an Array');
         let row = rows;
-        columns.forEach(col => {
-            if(typeof col === 'string'){
-                row[col] = hashids.encode(row[col]);
-            } else if(typeof col === 'object'){
-                let obj = col;
-                for(let key in obj) {
-                    obj[key] = obj[key] instanceof Array ? obj[key] : [obj[key]];
-                    obj[key].forEach(c => {
-                        row[key][c] = hashids.encode(row[key][c]);
-                    });
+        if (row) {
+            columns.forEach(col => {
+                if(typeof col === 'string'){
+                    try {
+                        row[col] = hashids.encode(row[col]);
+                    } catch (e) {
+                        console.log('3. CAUGHT AN ERROR ON FILTER.HELPER.JS HASHCOLUMNSFN() ');
+                    }
+                } else if(typeof col === 'object'){
+                    let obj = col;
+                    for(let key in obj) {
+                        obj[key] = obj[key] instanceof Array ? obj[key] : [obj[key]];
+                        obj[key].forEach(c => {
+                            try {
+                                row[key][c] = hashids.encode(row[key][c]);
+                            } catch (e) {
+                                console.log('3. CAUGHT AN ERROR ON FILTER.HELPER.JS HASHCOLUMNSFN() ');
+                            }
+                            
+                        });
+                    }
                 }
-            }
-        });
+            });
+        } else {
+            console.log('ROW DOES NOT EXISTS');
+        }
     }
     return rows;
 }
