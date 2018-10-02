@@ -112,15 +112,17 @@ const filterFn = async (res, param, opts={}) => {
                 filterValue;
             Object.keys(filter).forEach((filterField) => {
                 filterValue = filter[filterField];
-                if(!filterValue) return;
+                if(!filterValue && filterValue !== 0) return;
 
                 fieldExists = tblAttr.hasOwnProperty(filterField),
                 type = fieldExists ? tblAttr[filterField].type.constructor.key: '',
                 fieldDT = getFieldDataType(type);
 
-                if(filterValue && fieldDT == 'STRING') {
+                if (filterValue instanceof Array) {
+                    cfg[filterField] = filterValue;
+                } else if(filterValue && fieldDT == 'STRING') {
                     cfg[filterField] = { [Op.like]: `%${filterValue}%` };
-                } else if(filterValue && fieldDT == 'NUMBER') {
+                } else if((filterValue || filterValue === 0) && fieldDT == 'NUMBER') {
                     if(typeof filterValue !== 'number' && 
                         (tblAttr[filterField].hasOwnProperty('references') || tblAttr[filterField].primaryKey)
                     ){
@@ -132,6 +134,7 @@ const filterFn = async (res, param, opts={}) => {
                     dayBefore.setDate(dayBefore.getDate() + 1);
                     cfg[filterField] = { [Op.between]: [new Date(filterValue), dayBefore]};
                 }
+
             });
         }
         else if(typeof filter === 'string') {

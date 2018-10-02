@@ -325,6 +325,23 @@ const getEntities = async (req, res) => {
         }
     }
 
+    if(filter['publisher']) {
+        let publishers;
+        [err, publishers] = await to(User.findAll({
+            attributes: ['id'],
+            where: {
+                username: {[Op.like]: `%${ filter['publisher'] }%`}
+            }
+        }));
+        if(err) return ReE(res, err, 422);
+        if(publishers){
+            publishers = JSON.parse(JSON.stringify(publishers));
+            const userIds = publishers.map(u => u.id);
+            filter.userId = userIds;
+        }
+        delete filter.publishers;
+    }
+    
     const data = await filterFn(res, {
         config,
         filter,
@@ -524,7 +541,6 @@ const getReviews = async (req, res) => {
         },
         paranoid: true
     };
-    
     const data = await filterFn(res, {
         config,
         filter,
